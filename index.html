@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Controle Financeiro Web</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .summary-card {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Meu Controle Financeiro</h1>
+            <p class="text-gray-600 mt-2">Uma forma simples de acompanhar minhas entradas e saídas.</p>
+        </header>
+
+        <!-- Resumo Mensal -->
+        <section id="summary" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="summary-card bg-green-100 border border-green-200 p-6 rounded-lg shadow">
+                <h3 class="font-bold text-green-800">Total de Entradas</h3>
+                <p id="total-entradas" class="text-2xl font-semibold text-green-900 mt-2">R$ 0,00</p>
+            </div>
+            <div class="summary-card bg-red-100 border border-red-200 p-6 rounded-lg shadow">
+                <h3 class="font-bold text-red-800">Total de Saídas</h3>
+                <p id="total-saidas" class="text-2xl font-semibold text-red-900 mt-2">R$ 0,00</p>
+            </div>
+            <div class="summary-card bg-blue-100 border border-blue-200 p-6 rounded-lg shadow">
+                <h3 class="font-bold text-blue-800">Saldo Final</h3>
+                <p id="saldo-final" class="text-2xl font-semibold text-blue-900 mt-2">R$ 0,00</p>
+            </div>
+        </section>
+
+        <!-- Formulário de Adição Principal -->
+        <section id="add-transaction" class="mb-8 bg-white p-6 rounded-lg shadow">
+            <h2 class="text-2xl font-bold mb-4">Adicionar Novo Lançamento (Conta Principal)</h2>
+            <form id="transaction-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                <div class="md:col-span-1">
+                    <label for="date" class="block text-sm font-medium text-gray-700">Data</label>
+                    <input type="date" id="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="description" class="block text-sm font-medium text-gray-700">Descrição</label>
+                    <input type="text" id="description" placeholder="Ex: Salário" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+                 <div class="md:col-span-1">
+                    <label for="category" class="block text-sm font-medium text-gray-700">Categoria</label>
+                    <select id="category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option>Salário</option>
+                        <option>Cartão de Crédito</option>
+                        <option>Pix</option>
+                        <option>Transporte</option>
+                        <option>Gastos Fora de Casa</option>
+                        <option>Gastos Pessoais</option>
+                        <option>Moradia</option>
+                        <option>Outros</option>
+                    </select>
+                </div>
+                <div class="md:col-span-1">
+                    <label for="type" class="block text-sm font-medium text-gray-700">Tipo</label>
+                    <select id="type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="Entrada">Entrada</option>
+                        <option value="Saída">Saída</option>
+                    </select>
+                </div>
+                <div class="md:col-span-1">
+                    <label for="amount" class="block text-sm font-medium text-gray-700">Valor (R$)</label>
+                    <input type="number" id="amount" step="0.01" placeholder="150.50" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+                <div class="md:col-span-5">
+                    <button type="submit" class="w-full mt-4 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Adicionar Lançamento</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Tabela de Lançamentos Principais -->
+        <section id="transaction-list">
+            <h2 class="text-2xl font-bold mb-4">Meus Lançamentos (Conta Principal)</h2>
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- Seção do Cartão de Crédito -->
+        <section id="credit-card-section" class="mt-12 pt-8 border-t-2 border-gray-200">
+            <header class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-900">Controle do Cartão de Crédito</h2>
+                <p class="text-gray-600 mt-2">Cadastro de minhas compras para acompanhar a fatura.</p>
+            </header>
+
+            <div class="summary-card bg-orange-100 border border-orange-200 p-6 rounded-lg shadow mb-8 max-w-sm mx-auto">
+                <h3 class="font-bold text-orange-800 text-center">Total da Fatura Atual</h3>
+                <p id="total-fatura" class="text-2xl font-semibold text-orange-900 mt-2 text-center">R$ 0,00</p>
+            </div>
+
+            <div class="mb-8 bg-white p-6 rounded-lg shadow">
+                <h3 class="text-2xl font-bold mb-4">Adicionar Compra no Cartão</h3>
+                <form id="credit-card-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div class="md:col-span-2">
+                        <label for="cc-description" class="block text-sm font-medium text-gray-700">Descrição da Compra</label>
+                        <input type="text" id="cc-description" placeholder="Ex: Jantar no restaurante" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div class="md:col-span-1">
+                        <label for="cc-amount" class="block text-sm font-medium text-gray-700">Valor (R$)</label>
+                        <input type="number" id="cc-amount" step="0.01" placeholder="80.00" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div class="md:col-span-1">
+                        <label class="block text-sm font-medium text-gray-700">Parcelas (Opcional)</label>
+                        <div class="flex items-center mt-1 gap-2">
+                            <input type="number" id="cc-installment-current" min="1" placeholder="Atual" class="w-1/2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <span class="text-gray-500">de</span>
+                            <input type="number" id="cc-installment-total" min="1" placeholder="Total" class="w-1/2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div class="md:col-span-4">
+                        <button type="submit" class="w-full mt-4 bg-orange-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">Adicionar Compra</button>
+                    </div>
+                </form>
+            </div>
+
+             <h2 class="text-2xl font-bold mb-4">Compras na Fatura</h2>
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Parcelas</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="credit-card-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Modal de Alerta/Confirmação -->
+    <div id="custom-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+                    <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">Atenção!</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500" id="modal-message">Mensagem aqui.</p>
+                </div>
+                <div class="items-center px-4 py-3" id="modal-buttons"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const transactionForm = document.getElementById('transaction-form');
+        const transactionTableBody = document.getElementById('transaction-table-body');
+        const creditCardForm = document.getElementById('credit-card-form');
+        const creditCardTableBody = document.getElementById('credit-card-table-body');
+        
+        const totalEntradasEl = document.getElementById('total-entradas');
+        const totalSaidasEl = document.getElementById('total-saidas');
+        const saldoFinalEl = document.getElementById('saldo-final');
+        const saldoFinalCard = saldoFinalEl.parentElement;
+        const totalFaturaEl = document.getElementById('total-fatura');
+
+        const modal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalButtons = document.getElementById('modal-buttons');
+        let onConfirmCallback = null;
+
+        // State - Load from localStorage or use empty array
+        let transactions = JSON.parse(localStorage.getItem('finance-transactions')) || [];
+        let creditCardPurchases = JSON.parse(localStorage.getItem('finance-cc-purchases')) || [];
+
+        // Funções Salvas
+        function saveTransactionsToStorage() {
+            localStorage.setItem('finance-transactions', JSON.stringify(transactions));
+        }
+
+        function saveCreditCardPurchasesToStorage() {
+            localStorage.setItem('finance-cc-purchases', JSON.stringify(creditCardPurchases));
+        }
+
+        // Modal Funções
+        function showModal(message, callback) {
+            modalMessage.textContent = message;
+            onConfirmCallback = callback;
+            modalButtons.innerHTML = ''; 
+
+            if (callback) { // Confirmação de Modo
+                modalButtons.innerHTML = `
+                    <button id="modal-confirm-btn" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Sim</button>
+                    <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-900 text-base font-medium rounded-md w-24 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Não</button>
+                `;
+                document.getElementById('modal-confirm-btn').onclick = () => {
+                    if (onConfirmCallback) onConfirmCallback();
+                    hideModal();
+                };
+                document.getElementById('modal-cancel-btn').onclick = hideModal;
+            } else { // Alerta de modo
+                modalButtons.innerHTML = `
+                    <button id="modal-ok-btn" class="px-4 py-2 bg-indigo-500 text-white text-base font-medium rounded-md w-full hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">OK</button>
+                `;
+                document.getElementById('modal-ok-btn').onclick = hideModal;
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function hideModal() {
+            modal.classList.add('hidden');
+            onConfirmCallback = null;
+        }
+
+        // Utility functions
+        function formatCurrency(value) {
+            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function formatDate(dateString) {
+            const [year, month, day] = dateString.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        // Update functions
+        function updateSummary() {
+            const entradas = transactions.filter(t => t.type === 'Entrada').reduce((acc, t) => acc + t.amount, 0);
+            const saidas = transactions.filter(t => t.type === 'Saída').reduce((acc, t) => acc + t.amount, 0);
+            const saldo = entradas - saidas;
+            totalEntradasEl.textContent = formatCurrency(entradas);
+            totalSaidasEl.textContent = formatCurrency(saidas);
+            saldoFinalEl.textContent = formatCurrency(saldo);
+
+            saldoFinalCard.classList.remove('bg-blue-100', 'border-blue-200', 'bg-green-100', 'border-green-200', 'bg-red-100', 'border-red-200');
+            saldoFinalEl.classList.remove('text-blue-900', 'text-green-900', 'text-red-900');
+            
+            if (saldo > 0) {
+                saldoFinalCard.classList.add('bg-green-100', 'border-green-200');
+                saldoFinalEl.classList.add('text-green-900');
+            } else if (saldo < 0) {
+                saldoFinalCard.classList.add('bg-red-100', 'border-red-200');
+                saldoFinalEl.classList.add('text-red-900');
+            } else {
+                saldoFinalCard.classList.add('bg-blue-100', 'border-blue-200');
+                saldoFinalEl.classList.add('text-blue-900');
+            }
+        }
+        
+        function updateCreditCardSummary() {
+            const totalFatura = creditCardPurchases.reduce((acc, p) => acc + p.amount, 0);
+            totalFaturaEl.textContent = formatCurrency(totalFatura);
+        }
+
+        // Render functions
+        function renderTable() {
+            transactionTableBody.innerHTML = '';
+            if (transactions.length === 0) {
+                 transactionTableBody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 py-4">Nenhum lançamento adicionado ainda.</td></tr>`;
+                 return;
+            }
+            const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+            sortedTransactions.forEach(t => {
+                const isEntrada = t.type === 'Entrada';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(t.date)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${t.description}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${t.category}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${isEntrada ? 'text-green-600' : 'text-red-600'}">
+                        ${isEntrada ? '+' : '-'} ${formatCurrency(t.amount)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        <button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900">Excluir</button>
+                    </td>
+                `;
+                transactionTableBody.appendChild(row);
+            });
+        }
+        
+        function renderCreditCardTable() {
+            creditCardTableBody.innerHTML = '';
+            if(creditCardPurchases.length === 0) {
+                creditCardTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-500 py-4">Nenhuma compra no cartão adicionada ainda.</td></tr>`;
+                return;
+            }
+            const sortedPurchases = [...creditCardPurchases].sort((a, b) => a.id - b.id).reverse();
+            sortedPurchases.forEach(p => {
+                let installmentText = 'Pagamento Único';
+                if (p.installmentCurrent && p.installmentTotal) {
+                    installmentText = `${p.installmentCurrent} / ${p.installmentTotal}`;
+                }
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.description}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">${formatCurrency(p.amount)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${installmentText}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        <button onclick="deleteCreditCardPurchase(${p.id})" class="text-red-600 hover:text-red-900">Excluir</button>
+                    </td>
+                `;
+                creditCardTableBody.appendChild(row);
+            });
+        }
+        
+        // Add/Delete Handlers
+        function addTransaction(e) {
+            e.preventDefault();
+            const date = document.getElementById('date').value;
+            const description = document.getElementById('description').value;
+            const category = document.getElementById('category').value;
+            const type = document.getElementById('type').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            if (!date || !description || isNaN(amount) || amount <= 0) {
+                showModal('Por favor, preencha todos os campos com valores válidos.', null);
+                return;
+            }
+            transactions.push({ id: Date.now(), date, description, category, type, amount });
+            updateAll();
+            transactionForm.reset();
+            document.getElementById('date').valueAsDate = new Date();
+        }
+        
+        function addCreditCardPurchase(e) {
+            e.preventDefault();
+            const description = document.getElementById('cc-description').value;
+            const amount = parseFloat(document.getElementById('cc-amount').value);
+            const installmentCurrent = document.getElementById('cc-installment-current').value;
+            const installmentTotal = document.getElementById('cc-installment-total').value;
+
+            if (!description || isNaN(amount) || amount <= 0) {
+                showModal('Por favor, preencha a descrição e o valor com dados válidos.', null);
+                return;
+            }
+            if ((installmentCurrent && !installmentTotal) || (!installmentCurrent && installmentTotal)) {
+                showModal('Para compras parceladas, preencha a parcela atual e a total.', null);
+                return;
+            }
+
+            const newPurchase = { 
+                id: Date.now(), 
+                description, 
+                amount,
+                installmentCurrent: installmentCurrent ? parseInt(installmentCurrent) : null,
+                installmentTotal: installmentTotal ? parseInt(installmentTotal) : null
+            };
+            creditCardPurchases.push(newPurchase);
+            updateAll();
+            creditCardForm.reset();
+        }
+
+        window.deleteTransaction = function(id) {
+            showModal('Tem certeza que deseja excluir este lançamento?', () => {
+                transactions = transactions.filter(t => t.id !== id);
+                updateAll();
+            });
+        }
+        
+        window.deleteCreditCardPurchase = function(id) {
+            showModal('Tem certeza que deseja excluir esta compra do cartão?', () => {
+                creditCardPurchases = creditCardPurchases.filter(p => p.id !== id);
+                updateAll();
+            });
+        }
+
+        // Master update function
+        function updateAll() {
+            renderTable();
+            updateSummary();
+            saveTransactionsToStorage();
+            
+            renderCreditCardTable();
+            updateCreditCardSummary();
+            saveCreditCardPurchasesToStorage();
+        }
+        
+        // Initialization
+        document.getElementById('date').valueAsDate = new Date();
+        transactionForm.addEventListener('submit', addTransaction);
+        creditCardForm.addEventListener('submit', addCreditCardPurchase);
+        updateAll();
+
+    </script>
+</body>
+</html>
