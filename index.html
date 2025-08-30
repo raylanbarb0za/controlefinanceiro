@@ -13,6 +13,45 @@
         .summary-card {
             transition: all 0.3s ease-in-out;
         }
+
+        .carousel-slide {
+            width: 100%;
+            flex-shrink: 0;
+            padding: 1.5rem;
+            box-sizing: border-box;
+        }
+
+        .slide-data-point {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .slide-data-point:last-child {
+            border-bottom: none;
+        }
+
+        .slide-label {
+            font-weight: 600;
+            color: #4b5563;
+        }
+
+        @media (max-width: 768px) {
+            #transaction-table-container, #credit-card-table-container {
+                display: none;
+            }
+            #transaction-carousel-container, #credit-card-carousel-container {
+                display: block;
+            }
+        }
+
+        @media (min-width: 769px) {
+            #transaction-carousel-container, #credit-card-carousel-container {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -23,7 +62,6 @@
             <p class="text-gray-600 mt-2">Uma forma simples de acompanhar minhas entradas e saídas.</p>
         </header>
 
-        <!-- Resumo Mensal -->
         <section id="summary" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div class="summary-card bg-green-100 border border-green-200 p-6 rounded-lg shadow">
                 <h3 class="font-bold text-green-800">Total de Entradas</h3>
@@ -39,7 +77,6 @@
             </div>
         </section>
 
-        <!-- Formulário de Adição Principal -->
         <section id="add-transaction" class="mb-8 bg-white p-6 rounded-lg shadow">
             <h2 class="text-2xl font-bold mb-4">Adicionar Novo Lançamento (Conta Principal)</h2>
             <form id="transaction-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
@@ -83,10 +120,10 @@
             </form>
         </section>
 
-        <!-- Tabela de Lançamentos Principais -->
         <section id="transaction-list">
             <h2 class="text-2xl font-bold mb-4">Meus Lançamentos (Conta Principal)</h2>
-                <div class="bg-white rounded-lg shadow overflow-hidden">
+
+            <div id="transaction-table-container" class="bg-white rounded-lg shadow overflow-hidden">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -100,9 +137,20 @@
                     <tbody id="transaction-table-body" class="bg-white divide-y divide-gray-200"></tbody>
                 </table>
             </div>
+
+            <div id="transaction-carousel-container" class="hidden">
+                <div class="bg-white rounded-lg shadow overflow-hidden relative">
+                    <div id="transaction-slider" class="flex transition-transform duration-300 ease-in-out">
+                    </div>
+                </div>
+                <div class="flex justify-between items-center mt-4">
+                    <button id="prev-btn" class="bg-indigo-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-600 disabled:bg-gray-300">Anterior</button>
+                    <span id="slide-counter" class="text-sm text-gray-600 font-medium"></span>
+                    <button id="next-btn" class="bg-indigo-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-600 disabled:bg-gray-300">Próximo</button>
+                </div>
+            </div>
         </section>
         
-        <!-- Seção do Cartão de Crédito -->
         <section id="credit-card-section" class="mt-12 pt-8 border-t-2 border-gray-200">
             <header class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-900">Controle do Cartão de Crédito</h2>
@@ -139,8 +187,9 @@
                 </form>
             </div>
 
-             <h2 class="text-2xl font-bold mb-4">Compras na Fatura</h2>
-            <div class="bg-white rounded-lg shadow overflow-hidden">
+            <h2 class="text-2xl font-bold mb-4">Compras na Fatura</h2>
+
+            <div id="credit-card-table-container" class="bg-white rounded-lg shadow overflow-hidden">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -153,11 +202,20 @@
                     <tbody id="credit-card-table-body" class="bg-white divide-y divide-gray-200"></tbody>
                 </table>
             </div>
+
+            <div id="credit-card-carousel-container" class="hidden">
+                <div class="bg-white rounded-lg shadow overflow-hidden relative">
+                    <div id="credit-card-slider" class="flex transition-transform duration-300 ease-in-out">
+                    </div>
+                </div>
+                <div class="flex justify-between items-center mt-4">
+                    <button id="cc-prev-btn" class="bg-orange-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-orange-600 disabled:bg-gray-300">Anterior</button>
+                    <span id="cc-slide-counter" class="text-sm text-gray-600 font-medium"></span>
+                    <button id="cc-next-btn" class="bg-orange-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-orange-600 disabled:bg-gray-300">Próximo</button>
+                </div>
+            </div>
         </section>
 
-    </div>
-
-    <!-- Modal de Alerta/Confirmação -->
     <div id="custom-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3 text-center">
@@ -174,77 +232,84 @@
     </div>
 
     <script>
-        // DOM Elements
+        // === DOM Elements ===
         const transactionForm = document.getElementById('transaction-form');
-        const transactionTableBody = document.getElementById('transaction-table-body');
         const creditCardForm = document.getElementById('credit-card-form');
-        const creditCardTableBody = document.getElementById('credit-card-table-body');
-        
         const totalEntradasEl = document.getElementById('total-entradas');
         const totalSaidasEl = document.getElementById('total-saidas');
         const saldoFinalEl = document.getElementById('saldo-final');
         const saldoFinalCard = saldoFinalEl.parentElement;
         const totalFaturaEl = document.getElementById('total-fatura');
-
         const modal = document.getElementById('custom-modal');
         const modalMessage = document.getElementById('modal-message');
         const modalButtons = document.getElementById('modal-buttons');
-        let onConfirmCallback = null;
+        
+        // Lançamentos Principais
+        const transactionTableContainer = document.getElementById('transaction-table-container');
+        const transactionTableBody = document.getElementById('transaction-table-body');
+        const carouselContainer = document.getElementById('transaction-carousel-container');
+        const slider = document.getElementById('transaction-slider');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const slideCounter = document.getElementById('slide-counter');
 
-        // State - Load from localStorage or use empty array
+        // Cartão de Crédito
+        const creditCardTableContainer = document.getElementById('credit-card-table-container');
+        const creditCardTableBody = document.getElementById('credit-card-table-body');
+        const ccCarouselContainer = document.getElementById('credit-card-carousel-container');
+        const ccSlider = document.getElementById('credit-card-slider');
+        const ccPrevBtn = document.getElementById('cc-prev-btn');
+        const ccNextBtn = document.getElementById('cc-next-btn');
+        const ccSlideCounter = document.getElementById('cc-slide-counter');
+
+        // === State ===
         let transactions = JSON.parse(localStorage.getItem('finance-transactions')) || [];
         let creditCardPurchases = JSON.parse(localStorage.getItem('finance-cc-purchases')) || [];
+        let onConfirmCallback = null;
+        let currentSlide = 0;
+        let ccCurrentSlide = 0; // CORREÇÃO: Adicionada variável que faltava
 
-        // Funções Salvas
+        // === Funções de Persistência ===
         function saveTransactionsToStorage() {
             localStorage.setItem('finance-transactions', JSON.stringify(transactions));
         }
-
         function saveCreditCardPurchasesToStorage() {
             localStorage.setItem('finance-cc-purchases', JSON.stringify(creditCardPurchases));
         }
 
-        // Modal Funções
+        // === Funções do Modal ===
         function showModal(message, callback) {
             modalMessage.textContent = message;
             onConfirmCallback = callback;
-            modalButtons.innerHTML = ''; 
-
-            if (callback) { // Confirmação de Modo
+            modalButtons.innerHTML = '';
+            if (callback) {
                 modalButtons.innerHTML = `
                     <button id="modal-confirm-btn" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Sim</button>
                     <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-900 text-base font-medium rounded-md w-24 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Não</button>
                 `;
-                document.getElementById('modal-confirm-btn').onclick = () => {
-                    if (onConfirmCallback) onConfirmCallback();
-                    hideModal();
-                };
+                document.getElementById('modal-confirm-btn').onclick = () => { if (onConfirmCallback) onConfirmCallback(); hideModal(); };
                 document.getElementById('modal-cancel-btn').onclick = hideModal;
-            } else { // Alerta de modo
-                modalButtons.innerHTML = `
-                    <button id="modal-ok-btn" class="px-4 py-2 bg-indigo-500 text-white text-base font-medium rounded-md w-full hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">OK</button>
-                `;
+            } else {
+                modalButtons.innerHTML = `<button id="modal-ok-btn" class="px-4 py-2 bg-indigo-500 text-white text-base font-medium rounded-md w-full hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">OK</button>`;
                 document.getElementById('modal-ok-btn').onclick = hideModal;
             }
             modal.classList.remove('hidden');
         }
-
         function hideModal() {
             modal.classList.add('hidden');
             onConfirmCallback = null;
         }
 
-        // Utility functions
+        // === Funções Utilitárias ===
         function formatCurrency(value) {
             return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
-
         function formatDate(dateString) {
             const [year, month, day] = dateString.split('-');
             return `${day}/${month}/${year}`;
         }
 
-        // Update functions
+        // === Funções de Atualização de Resumo ===
         function updateSummary() {
             const entradas = transactions.filter(t => t.type === 'Entrada').reduce((acc, t) => acc + t.amount, 0);
             const saidas = transactions.filter(t => t.type === 'Saída').reduce((acc, t) => acc + t.amount, 0);
@@ -252,10 +317,8 @@
             totalEntradasEl.textContent = formatCurrency(entradas);
             totalSaidasEl.textContent = formatCurrency(saidas);
             saldoFinalEl.textContent = formatCurrency(saldo);
-
             saldoFinalCard.classList.remove('bg-blue-100', 'border-blue-200', 'bg-green-100', 'border-green-200', 'bg-red-100', 'border-red-200');
             saldoFinalEl.classList.remove('text-blue-900', 'text-green-900', 'text-red-900');
-            
             if (saldo > 0) {
                 saldoFinalCard.classList.add('bg-green-100', 'border-green-200');
                 saldoFinalEl.classList.add('text-green-900');
@@ -267,64 +330,123 @@
                 saldoFinalEl.classList.add('text-blue-900');
             }
         }
-        
         function updateCreditCardSummary() {
             const totalFatura = creditCardPurchases.reduce((acc, p) => acc + p.amount, 0);
             totalFaturaEl.textContent = formatCurrency(totalFatura);
         }
 
-        // Render functions
-        function renderTable() {
+        // === Funções de Renderização (Lançamentos Principais) ===
+        function renderTransactionViews() {
             transactionTableBody.innerHTML = '';
+            slider.innerHTML = '';
             if (transactions.length === 0) {
-                 transactionTableBody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 py-4">Nenhum lançamento adicionado ainda.</td></tr>`;
-                 return;
+                transactionTableBody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 py-4">Nenhum lançamento adicionado ainda.</td></tr>`;
+                carouselContainer.style.display = 'none';
+                return;
             }
+            carouselContainer.style.display = ''; // CORREÇÃO: Reseta o display para o CSS controlar
             const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
             sortedTransactions.forEach(t => {
                 const isEntrada = t.type === 'Entrada';
-                const row = document.createElement('tr');
-                row.innerHTML = `
+                const valorFormatado = `${isEntrada ? '+' : '-'} ${formatCurrency(t.amount)}`;
+                const corValor = isEntrada ? 'text-green-600' : 'text-red-600';
+                const tableRow = document.createElement('tr');
+                tableRow.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(t.date)}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${t.description}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${t.category}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${isEntrada ? 'text-green-600' : 'text-red-600'}">
-                        ${isEntrada ? '+' : '-'} ${formatCurrency(t.amount)}
-                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${corValor}">${valorFormatado}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                         <button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900">Excluir</button>
-                    </td>
-                `;
-                transactionTableBody.appendChild(row);
+                    </td>`;
+                transactionTableBody.appendChild(tableRow);
+                const slideDiv = document.createElement('div');
+                slideDiv.className = 'carousel-slide';
+                slideDiv.innerHTML = `
+                    <div class="slide-data-point"><span class="slide-label">Data:</span><span class="text-sm text-gray-800">${formatDate(t.date)}</span></div>
+                    <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900">${t.description}</span></div>
+                    <div class="slide-data-point"><span class="slide-label">Categoria:</span><span class="text-sm text-gray-800">${t.category}</span></div>
+                    <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="text-sm font-bold ${corValor}">${valorFormatado}</span></div>
+                    <div class="mt-4 text-center"><button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Lançamento</button></div>`;
+                slider.appendChild(slideDiv);
             });
+            showSlide(currentSlide);
         }
-        
-        function renderCreditCardTable() {
-            creditCardTableBody.innerHTML = '';
-            if(creditCardPurchases.length === 0) {
-                creditCardTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-500 py-4">Nenhuma compra no cartão adicionada ainda.</td></tr>`;
+        function showSlide(index) {
+            if (transactions.length === 0) return;
+            if (index >= transactions.length) index = transactions.length - 1;
+            if (index < 0) index = 0;
+            slider.style.transform = `translateX(-${index * 100}%)`;
+            currentSlide = index;
+            updateNavButtons();
+        }
+        function updateNavButtons() {
+            if (transactions.length === 0) {
+                slideCounter.textContent = '0 / 0';
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
                 return;
             }
-            const sortedPurchases = [...creditCardPurchases].sort((a, b) => a.id - b.id).reverse();
+            slideCounter.textContent = `${currentSlide + 1} / ${transactions.length}`;
+            prevBtn.disabled = currentSlide === 0;
+            nextBtn.disabled = currentSlide === transactions.length - 1;
+        }
+
+        // === Funções de Renderização (Cartão de Crédito) ===
+        function renderCreditCardViews() {
+            creditCardTableBody.innerHTML = '';
+            ccSlider.innerHTML = '';
+            if (creditCardPurchases.length === 0) {
+                creditCardTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-500 py-4">Nenhuma compra no cartão adicionada ainda.</td></tr>`;
+                ccCarouselContainer.style.display = 'none';
+                return;
+            }
+            ccCarouselContainer.style.display = ''; // CORREÇÃO: Reseta o display para o CSS controlar
+            const sortedPurchases = [...creditCardPurchases].sort((a, b) => b.id - a.id);
             sortedPurchases.forEach(p => {
                 let installmentText = 'Pagamento Único';
-                if (p.installmentCurrent && p.installmentTotal) {
-                    installmentText = `${p.installmentCurrent} / ${p.installmentTotal}`;
-                }
-                const row = document.createElement('tr');
-                row.innerHTML = `
+                if (p.installmentCurrent && p.installmentTotal) installmentText = `${p.installmentCurrent} / ${p.installmentTotal}`;
+                const tableRow = document.createElement('tr');
+                tableRow.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.description}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">${formatCurrency(p.amount)}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${installmentText}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                         <button onclick="deleteCreditCardPurchase(${p.id})" class="text-red-600 hover:text-red-900">Excluir</button>
-                    </td>
-                `;
-                creditCardTableBody.appendChild(row);
+                    </td>`;
+                creditCardTableBody.appendChild(tableRow);
+                const slideDiv = document.createElement('div');
+                slideDiv.className = 'carousel-slide';
+                slideDiv.innerHTML = `
+                    <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900 text-right">${p.description}</span></div>
+                    <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="text-sm font-bold text-red-600">${formatCurrency(p.amount)}</span></div>
+                    <div class="slide-data-point"><span class="slide-label">Parcelas:</span><span class="text-sm text-gray-800">${installmentText}</span></div>
+                    <div class="mt-4 text-center"><button onclick="deleteCreditCardPurchase(${p.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Compra</button></div>`;
+                ccSlider.appendChild(slideDiv);
             });
+            showCreditCardSlide(ccCurrentSlide);
         }
-        
-        // Add/Delete Handlers
+        function showCreditCardSlide(index) {
+            if (creditCardPurchases.length === 0) return;
+            if (index >= creditCardPurchases.length) index = creditCardPurchases.length - 1;
+            if (index < 0) index = 0;
+            ccSlider.style.transform = `translateX(-${index * 100}%)`;
+            ccCurrentSlide = index;
+            updateCreditCardNavButtons();
+        }
+        function updateCreditCardNavButtons() {
+            if (creditCardPurchases.length === 0) {
+                ccSlideCounter.textContent = '0 / 0';
+                ccPrevBtn.disabled = true;
+                ccNextBtn.disabled = true;
+                return;
+            }
+            ccSlideCounter.textContent = `${ccCurrentSlide + 1} / ${creditCardPurchases.length}`;
+            ccPrevBtn.disabled = ccCurrentSlide === 0;
+            ccNextBtn.disabled = ccCurrentSlide === creditCardPurchases.length - 1;
+        }
+
+        // === Funções de Manipulação de Dados (Add/Delete) ===
         function addTransaction(e) {
             e.preventDefault();
             const date = document.getElementById('date').value;
@@ -333,50 +455,36 @@
             const type = document.getElementById('type').value;
             const amount = parseFloat(document.getElementById('amount').value);
             if (!date || !description || isNaN(amount) || amount <= 0) {
-                showModal('Por favor, preencha todos os campos com valores válidos.', null);
-                return;
+                showModal('Por favor, preencha todos os campos com valores válidos.', null); return;
             }
             transactions.push({ id: Date.now(), date, description, category, type, amount });
             updateAll();
             transactionForm.reset();
             document.getElementById('date').valueAsDate = new Date();
         }
-        
         function addCreditCardPurchase(e) {
             e.preventDefault();
             const description = document.getElementById('cc-description').value;
             const amount = parseFloat(document.getElementById('cc-amount').value);
             const installmentCurrent = document.getElementById('cc-installment-current').value;
             const installmentTotal = document.getElementById('cc-installment-total').value;
-
             if (!description || isNaN(amount) || amount <= 0) {
-                showModal('Por favor, preencha a descrição e o valor com dados válidos.', null);
-                return;
+                showModal('Por favor, preencha a descrição e o valor com dados válidos.', null); return;
             }
             if ((installmentCurrent && !installmentTotal) || (!installmentCurrent && installmentTotal)) {
-                showModal('Para compras parceladas, preencha a parcela atual e a total.', null);
-                return;
+                showModal('Para compras parceladas, preencha a parcela atual e a total.', null); return;
             }
-
-            const newPurchase = { 
-                id: Date.now(), 
-                description, 
-                amount,
-                installmentCurrent: installmentCurrent ? parseInt(installmentCurrent) : null,
-                installmentTotal: installmentTotal ? parseInt(installmentTotal) : null
-            };
+            const newPurchase = { id: Date.now(), description, amount, installmentCurrent: installmentCurrent ? parseInt(installmentCurrent) : null, installmentTotal: installmentTotal ? parseInt(installmentTotal) : null };
             creditCardPurchases.push(newPurchase);
             updateAll();
             creditCardForm.reset();
         }
-
         window.deleteTransaction = function(id) {
             showModal('Tem certeza que deseja excluir este lançamento?', () => {
                 transactions = transactions.filter(t => t.id !== id);
                 updateAll();
             });
         }
-        
         window.deleteCreditCardPurchase = function(id) {
             showModal('Tem certeza que deseja excluir esta compra do cartão?', () => {
                 creditCardPurchases = creditCardPurchases.filter(p => p.id !== id);
@@ -384,23 +492,28 @@
             });
         }
 
-        // Master update function
+        // === Função Principal de Atualização ===
         function updateAll() {
-            renderTable();
+            renderTransactionViews();
             updateSummary();
             saveTransactionsToStorage();
             
-            renderCreditCardTable();
+            renderCreditCardViews();
             updateCreditCardSummary();
             saveCreditCardPurchasesToStorage();
         }
         
-        // Initialization
+        // === Inicialização ===
         document.getElementById('date').valueAsDate = new Date();
         transactionForm.addEventListener('submit', addTransaction);
         creditCardForm.addEventListener('submit', addCreditCardPurchase);
+        
+        prevBtn.addEventListener('click', () => showSlide(currentSlide - 1));
+        nextBtn.addEventListener('click', () => showSlide(currentSlide + 1));
+        ccPrevBtn.addEventListener('click', () => showCreditCardSlide(ccCurrentSlide - 1));
+        ccNextBtn.addEventListener('click', () => showCreditCardSlide(ccCurrentSlide + 1));
+        
         updateAll();
-
     </script>
 </body>
 </html>
