@@ -122,7 +122,10 @@
 
         <section id="transaction-list">
             <h2 class="text-2xl font-bold mb-4">Meus Lançamentos</h2>
-
+            <div id="filtered-summary" class="hidden bg-blue-50 border border-blue-200 p-4 rounded-lg shadow-sm mb-6 text-center">
+                <h3 class="font-bold text-blue-800">Valor Total do Período Filtrado</h3>
+                <p id="filtered-summary-total" class="text-2xl font-semibold text-blue-900 mt-2">R$ 0,00</p>
+            </div>
             <div id="transaction-table-container" class="bg-white rounded-lg shadow overflow-hidden">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -314,6 +317,8 @@
     const filterCategory = document.getElementById('filter-category');
     const filterType = document.getElementById('filter-type');
     const filterBtn = document.getElementById('filter-btn');
+    const filteredSummaryEl = document.getElementById('filtered-summary');
+    const filteredSummaryTotalEl = document.getElementById('filtered-summary-total');
     const clearFilterBtn = document.getElementById('clear-filter-btn');
 
     // PARTE 2: ESTADO DA APLICAÇÃO (VARIÁVEIS GLOBAIS)
@@ -404,16 +409,43 @@
         const typeMatch = !filterType.value || transaction.type === filterType.value;
 
         return dateMatch && categoryMatch && typeMatch;
-    });
-    renderTransactionViews(filteredTransactions);
-}
+        });
+        renderTransactionViews(filteredTransactions);
+        updateFilteredSummary(filteredTransactions);
+    }
 
     function clearFilters() {
         filterStartDate.value = '';
         filterEndDate.value = '';
         filterCategory.value = '';
         filterType.value = '';
-        renderTransactionViews(transactions); 
+        renderTransactionViews(transactions);
+        updateFilteredSummary(transactions);
+    }
+
+    function updateFilteredSummary(filteredList) {
+    // Se a lista filtrada tiver o mesmo tamanho da lista original, significa que nenhum filtro está ativo.
+    // Neste caso, escondemos o card de resumo.
+    if (filteredList.length === transactions.length && transactions.length > 0) {
+        filteredSummaryEl.classList.add('hidden');
+        return; // Para a execução da função aqui.
+    }
+
+    // Se a lista estiver vazia por causa de um filtro, mostramos R$ 0,00
+    if (filteredList.length === 0) {
+        filteredSummaryTotalEl.textContent = formatCurrency(0);
+        filteredSummaryEl.classList.remove('hidden');
+        return;
+    }
+
+        // Calcula as entradas, saídas e o saldo apenas para os itens filtrados
+        const entradas = filteredList.filter(t => t.type === 'Entrada').reduce((acc, t) => acc + t.amount, 0);
+        const saidas = filteredList.filter(t => t.type === 'Saída').reduce((acc, t) => acc + t.amount, 0);
+        const saldo = entradas - saidas;
+
+        // Atualiza o texto com o valor formatado e garante que o card esteja visível
+        filteredSummaryTotalEl.textContent = formatCurrency(saldo);
+        filteredSummaryEl.classList.remove('hidden');
     }
 
     function saveTransactionsToStorage() {
@@ -636,4 +668,5 @@
 </script>
 </body>
 </html>
+
 
