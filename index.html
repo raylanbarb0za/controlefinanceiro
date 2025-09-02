@@ -38,18 +38,30 @@
             color: #4b5563;
         }
 
-        @media (max-width: 768px) {
-            #transaction-table-container, #credit-card-table-container {
-                display: flex;
-            }
-            #transaction-carousel-container, #credit-card-carousel-container {
-                display: flex;
-            }
+        .carousel-item {
+            min-width: 100%;
+            box-sizing: border-box;
         }
 
+        #transaction-table-container,
+        #credit-card-table-container {
+            display: none;
+        }
+
+        #transaction-carousel-container,
+        #credit-card-carousel-container {
+            display: block;
+        }
+
+        /* Telas Grandes (Desktop): Inverte a visibilidade */
         @media (min-width: 769px) {
-            #transaction-carousel-container, #credit-card-carousel-container {
-                display: flex;
+            #transaction-table-container,
+            #credit-card-table-container {
+                display: block; /* Tabelas aparecem */
+            }
+            #transaction-carousel-container,
+            #credit-card-carousel-container {
+                display: none;  /* Carrosséis desaparecem */
             }
         }
     </style>
@@ -141,7 +153,7 @@
                 </table>
             </div>
 
-            <div id="transaction-carousel-container" class="hidden">
+            <div id="transaction-carousel-container">
                 <div class="bg-white rounded-lg shadow overflow-hidden relative">
                     <div id="transaction-slider" class="flex transition-transform duration-300 ease-in-out">
                     </div>
@@ -252,7 +264,7 @@
                 </table>
             </div>
 
-            <div id="credit-card-carousel-container" class="hidden">
+            <div id="credit-card-carousel-container">
                 <div class="bg-white rounded-lg shadow overflow-hidden relative">
                     <div id="credit-card-slider" class="flex transition-transform duration-300 ease-in-out">
                     </div>
@@ -424,8 +436,8 @@
     }
 
     function updateFilteredSummary(filteredList) {
+        
     // Se a lista filtrada tiver o mesmo tamanho da lista original, significa que nenhum filtro está ativo.
-    // Neste caso, escondemos o card de resumo.
     if (filteredList.length === transactions.length && transactions.length > 0) {
         filteredSummaryEl.classList.add('hidden');
         return; // Para a execução da função aqui.
@@ -460,21 +472,37 @@
     function renderTransactionViews(transactionsToRender = transactions) {
         transactionTableBody.innerHTML = '';
         slider.innerHTML = '';
+
         if (transactionsToRender.length === 0) {
+            // Mostra a mensagem na tabela (para desktop)
             transactionTableBody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 py-4">Nenhum lançamento encontrado.</td></tr>`;
-            carouselContainer.style.display = 'none';
+        
+            // Garante que o carrossel esteja visível para mostrar a mensagem
+            carouselContainer.classList.remove('hidden'); 
+        
+            // Coloca a mensagem de "vazio" dentro do slider
+            slider.innerHTML = `<div class="text-center text-gray-500 py-8">Nenhum lançamento encontrado.</div>`;
+        
+            // Atualiza os botões e contador para o estado de "vazio"
+            currentSlide = 0;
+            updateNavButtons(transactionsToRender);
             return;
         }
-        carouselContainer.style.display = '';
-        let dateA = a.date.includes('/') ? new Date(a.date.split('/').reverse().join('-')) : new Date(a.date);
+
+        // Garante que o carrossel esteja visível
+        carouselContainer.classList.remove('hidden');
+
+        // Bloco de ordenação 
+        const sortedTransactions = [...transactionsToRender].sort((a, b) => {
+            let dateA = a.date.includes('/') ? new Date(a.date.split('/').reverse().join('-')) : new Date(a.date);
             let dateB = b.date.includes('/') ? new Date(b.date.split('/').reverse().join('-')) : new Date(b.date);
-            // Primeiro, tenta ordenar pela data (mais recente primeiro)
             if (dateB - dateA !== 0) {
-            return dateB - dateA;
+                return dateB - dateA;
             }
-            // Se as datas forem iguais, usa o ID como desempate (o mais recente/maior vem primeiro)
             return b.id - a.id;
         });
+
+        // Loop para criar os elementos 
         sortedTransactions.forEach(t => {
             const isEntrada = t.type === 'Entrada';
             const valorFormatado = t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -487,31 +515,34 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${t.category}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${corValor}">${sinal} R$ ${valorFormatado}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900">Excluir</button>
-                </td>`;
-            transactionTableBody.appendChild(tableRow);
-            const slideDiv = document.createElement('div');
-            slideDiv.className = 'carousel-slide';
+                <button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900">Excluir</button>
+            </td>`;
+        transactionTableBody.appendChild(tableRow);
+        const slideDiv = document.createElement('div');
+        slideDiv.className = 'carousel-slide';
             slideDiv.innerHTML = `
-                <div class="slide-data-point"><span class="slide-label">Data:</span><span class="text-sm text-gray-800">${formatDate(t.date)}</span></div>
-                <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900">${t.description}</span></div>
-                <div class="slide-data-point"><span class="slide-label">Categoria:</span><span class="text-sm text-gray-800">${t.category}</span></div>
-                <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="text-sm font-bold ${corValor}">${sinal} R$ ${valorFormatado}</span></div>
-                <div class="mt-4 text-center"><button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Lançamento</button></div>`;
-            slider.appendChild(slideDiv);
-        });
-        showSlide(0, transactionsToRender);
-    }
+            <div class="slide-data-point"><span class="slide-label">Data:</span><span class="text-sm text-gray-800">${formatDate(t.date)}</span></div>
+            <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900">${t.description}</span></div>
+            <div class="slide-data-point"><span class="slide-label">Categoria:</span><span class="text-sm text-gray-800">${t.category}</span></div>
+            <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="text-sm font-bold ${corValor}">${sinal} R$ ${valorFormatado}</span></div>
+            <div class="mt-4 text-center"><button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Lançamento</button></div>`;
+        slider.appendChild(slideDiv);
+    });
+
+    // Mostra o primeiro slide
+    showSlide(0, transactionsToRender);
+}                                       
 
     function renderCreditCardViews() {
         creditCardTableBody.innerHTML = '';
         ccSlider.innerHTML = '';
         if (creditCardPurchases.length === 0) {
             creditCardTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-500 py-4">Nenhuma compra no cartão adicionada ainda.</td></tr>`;
-            ccCarouselContainer.style.display = 'none';
+            ccSlider.innerHTML = `<div class="carousel-slide text-center text-gray-500">Nenhuma compra no cartão.</div>`;
+            updateCreditCardNavButtons();
             return;
         }
-        ccCarouselContainer.style.display = '';
+
         const sortedPurchases = [...creditCardPurchases].sort((a, b) => b.id - a.id);
         sortedPurchases.forEach(p => {
             let installmentText = 'Pagamento Único';
@@ -642,6 +673,8 @@
         return dateString;
     }
 
+    
+
     // PARTE 6: FUNÇÃO PRINCIPAL DE ATUALIZAÇÃO
     function updateAll() {
         renderTransactionViews();
@@ -651,7 +684,7 @@
         renderCreditCardViews();
         updateCreditCardSummary();
         saveCreditCardPurchasesToStorage();
-    }
+    } 
 
     // PARTE 7: INICIALIZAÇÃO E EVENT LISTENERS
     document.getElementById('date').valueAsDate = new Date();
@@ -668,13 +701,6 @@
     ccNextBtn.addEventListener('click', () => showCreditCardSlide(ccCurrentSlide + 1));
     
     updateAll();
-
 </script>
 </body>
 </html>
-
-
-
-
-
-
