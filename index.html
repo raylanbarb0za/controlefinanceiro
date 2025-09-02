@@ -466,10 +466,14 @@
             return;
         }
         carouselContainer.style.display = '';
-        const sortedTransactions = [...transactionsToRender].sort((a, b) => {
-            let dateA = a.date.includes('/') ? new Date(a.date.split('/').reverse().join('-')) : new Date(a.date);
+        let dateA = a.date.includes('/') ? new Date(a.date.split('/').reverse().join('-')) : new Date(a.date);
             let dateB = b.date.includes('/') ? new Date(b.date.split('/').reverse().join('-')) : new Date(b.date);
+            // Primeiro, tenta ordenar pela data (mais recente primeiro)
+            if (dateB - dateA !== 0) {
             return dateB - dateA;
+            }
+            // Se as datas forem iguais, usa o ID como desempate (o mais recente/maior vem primeiro)
+            return b.id - a.id;
         });
         sortedTransactions.forEach(t => {
             const isEntrada = t.type === 'Entrada';
@@ -668,6 +672,7 @@
 </script>
 </body>
 </html>
+
 
 
 
