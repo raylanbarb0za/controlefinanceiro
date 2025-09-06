@@ -333,6 +333,8 @@
     let onConfirmCallback = null;
     let currentSlide = 0;
     let ccCurrentSlide = 0;
+    let editingTransactionId = null;
+    let editingCreditCardId = null;
 
     // PARTE 3: FUNÇÕES DE DADOS (ADD, DELETE, FILTER, SAVE)
     function addTransaction(e) {
@@ -343,31 +345,67 @@
         const type = document.getElementById('type').value;
         const amount = parseFloat(document.getElementById('amount').value);
         if (!date || !description || isNaN(amount) || amount <= 0) {
-            showModal('Por favor, preencha todos os campos com valores válidos.', null); return;
+            showModal('Por favor, preencha todos os campos com valores válidos.', null); 
+            return;
         }
-        transactions.push({ id: Date.now(), date, description, category, type, amount });
+
+        if (editingTransactionId) {
+        // Atualiza lançamento existente
+            const index = transactions.findIndex(t => t.id === editingTransactionId);
+            transactions[index] = { id: editingTransactionId, date, description, category, type, amount };
+            editingTransactionId = null; // limpa edição
+        } else {
+            // Adiciona novo lançamento
+            transactions.push({ id: Date.now(), date, description, category, type, amount });
+        }
+
         updateAll();
         transactionForm.reset();
         document.getElementById('date').valueAsDate = new Date();
     }
 
     function addCreditCardPurchase(e) {
-        e.preventDefault();
-        const description = document.getElementById('cc-description').value;
-        const amount = parseFloat(document.getElementById('cc-amount').value);
-        const installmentCurrent = document.getElementById('cc-installment-current').value;
-        const installmentTotal = document.getElementById('cc-installment-total').value;
-        if (!description || isNaN(amount) || amount <= 0) {
-            showModal('Por favor, preencha a descrição e o valor com dados válidos.', null); return;
-        }
-        if ((installmentCurrent && !installmentTotal) || (!installmentCurrent && installmentTotal)) {
-            showModal('Para compras parceladas, preencha a parcela atual e a total.', null); return;
-        }
-        const newPurchase = { id: Date.now(), description, amount, installmentCurrent: installmentCurrent ? parseInt(installmentCurrent) : null, installmentTotal: installmentTotal ? parseInt(installmentTotal) : null };
-        creditCardPurchases.push(newPurchase);
-        updateAll();
-        creditCardForm.reset();
+    e.preventDefault();
+    const description = document.getElementById('cc-description').value;
+    const amount = parseFloat(document.getElementById('cc-amount').value);
+    const installmentCurrent = document.getElementById('cc-installment-current').value;
+    const installmentTotal = document.getElementById('cc-installment-total').value;
+
+    if (!description || isNaN(amount) || amount <= 0) {
+        showModal('Por favor, preencha a descrição e o valor com dados válidos.', null); 
+        return;
     }
+    if ((installmentCurrent && !installmentTotal) || (!installmentCurrent && installmentTotal)) {
+        showModal('Para compras parceladas, preencha a parcela atual e a total.', null); 
+        return;
+    }
+
+    if (editingCreditCardId) {
+        // Atualiza compra existente
+        const index = creditCardPurchases.findIndex(p => p.id === editingCreditCardId);
+        creditCardPurchases[index] = {
+            id: editingCreditCardId,
+            description,
+            amount,
+            installmentCurrent: installmentCurrent ? parseInt(installmentCurrent) : null,
+            installmentTotal: installmentTotal ? parseInt(installmentTotal) : null
+        };
+        editingCreditCardId = null; // limpa edição
+    } else {
+        // Adiciona nova compra
+        creditCardPurchases.push({
+            id: Date.now(),
+            description,
+            amount,
+            installmentCurrent: installmentCurrent ? parseInt(installmentCurrent) : null,
+            installmentTotal: installmentTotal ? parseInt(installmentTotal) : null
+        });
+    }
+
+    updateAll();
+    creditCardForm.reset();
+}
+
 
     window.deleteTransaction = function(id) {
         showModal('Tem certeza que deseja excluir este lançamento?', () => {
@@ -479,6 +517,7 @@
     function saveCreditCardPurchasesToStorage() {
         localStorage.setItem('finance-cc-purchases', JSON.stringify(creditCardPurchases));
     }
+    
 
     // PARTE 4: FUNÇÕES DE RENDERIZAÇÃO E UI (VISUAL)
     function renderTransactionViews(transactionsToRender = transactions) {
@@ -519,7 +558,8 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${categoriaNormalizada}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${corValor}">${sinal} R$ ${valorFormatado}</td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                <button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900">Excluir</button>
+                <button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir</button>
+                <button onclick="editTransaction(${t.id})" class="text-yellow-600 hover:text-yellow-900 text-sm font-medium">Editar</button>
             </td>`;
         transactionTableBody.appendChild(tableRow);
 
@@ -530,12 +570,43 @@
             <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900">${t.description}</span></div>
             <div class="slide-data-point"><span class="slide-label">Categoria:</span><span class="text-sm text-gray-800">${categoriaNormalizada}</span></div>
             <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="text-sm font-bold ${corValor}">${sinal} R$ ${valorFormatado}</span></div>
-            <div class="mt-4 text-center"><button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Lançamento</button></div>`;
+            <div class="mt-4 text-center"><button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Lançamento</button></div>
+            <div class="mt-4 text-center"><button onclick="editTransaction(${t.id})" class="text-yellow-600 hover:text-yellow-900 text-sm font-medium">Editar Lançamento</button></div>`;
         slider.appendChild(slideDiv);
     });
 
     showSlide(0, transactionsToRender);
-}                                       
+}    
+
+    //funcao para editar os lancamentos em caso de erro 
+    function editTransaction(id) {
+    const t = transactions.find(item => item.id === id);
+    if (t) {
+        showModal('Deseja editar este lançamento?', () =>{
+        document.getElementById("date").value = t.date;
+        document.getElementById("description").value = t.description;
+        document.getElementById("category").value = t.category;
+        document.getElementById("amount").value = t.amount;
+        document.getElementById("type").value = t.type;
+
+        editingTransactionId = id; // guarda qual está sendo editado
+        });
+    }
+}
+    //funcao para editar os lancamentos no cartao de credito
+    function editCreditCardPurchase(id) {
+    const purchase = creditCardPurchases.find(p => p.id === id);
+    if (purchase) {
+        showModal('Deseja editar esta compra do cartão?', () => {
+            document.getElementById('cc-description').value = purchase.description;
+            document.getElementById('cc-amount').value = purchase.amount;
+            document.getElementById('cc-installment-current').value = purchase.installmentCurrent || '';
+            document.getElementById('cc-installment-total').value = purchase.installmentTotal || '';
+            
+            editingCreditCardId = id; // guarda o id da compra que está sendo editada
+        });
+    }
+}
 
     function renderCreditCardViews() {
         creditCardTableBody.innerHTML = '';
@@ -557,7 +628,8 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">${formatCurrency(p.amount)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${installmentText}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <button onclick="deleteCreditCardPurchase(${p.id})" class="text-red-600 hover:text-red-900">Excluir</button>
+                    <button onclick="deleteCreditCardPurchase(${p.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir</button>
+                    <button onclick="editCreditCardPurchase(${p.id})" class="text-yellow-600 hover:text-yellow-900 text-sm font-medium">Editar</button>
                 </td>`;
             creditCardTableBody.appendChild(tableRow);
             const slideDiv = document.createElement('div');
@@ -566,7 +638,8 @@
                 <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900 text-right">${p.description}</span></div>
                 <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="text-sm font-bold text-red-600">${formatCurrency(p.amount)}</span></div>
                 <div class="slide-data-point"><span class="slide-label">Parcelas:</span><span class="text-sm text-gray-800">${installmentText}</span></div>
-                <div class="mt-4 text-center"><button onclick="deleteCreditCardPurchase(${p.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Compra</button></div>`;
+                <div class="mt-4 text-center"><button onclick="deleteCreditCardPurchase(${p.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Lançamento</button></div>
+                <div class="mt-4 text-center"><button onclick="editCreditCardPurchase(${p.id})" class="text-yellow-600 hover:text-yellow-900 text-sm font-medium">Editar Lançamento</button></div>`;
             ccSlider.appendChild(slideDiv);
         });
         showCreditCardSlide(0);
@@ -716,4 +789,3 @@
 </script>
 </body>
 </html>
-
