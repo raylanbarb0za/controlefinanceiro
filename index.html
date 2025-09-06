@@ -104,9 +104,7 @@
                     <label for="category" class="block text-sm font-medium text-gray-700">Categoria</label>
                     <select id="category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         <option>Salário</option>
-                        <option>Cartão de Crédito</option>
-                        <option>Cartão de Débito</option>
-                        <option>Pix</option>
+                        <option>Cartão de Débito/Pix</option>
                         <option>Uber/99</option>
                         <option>Gastos Fora de Casa</option>
                         <option>Gastos Pessoais</option>
@@ -388,7 +386,6 @@
     }
 
     function applyFilters() {
-
     const startDateString = filterStartDate.value;
     const endDateString = filterEndDate.value;
 
@@ -408,21 +405,23 @@
             return false;
         }
 
-        // Verifica se a data da transação é válida
         if (isNaN(transactionDate.getTime())) {
             return false;
         }
 
         const dateMatch = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
         
-        const categoryMatch = !filterCategory.value || transaction.category === filterCategory.value;
+        // 🔹 normaliza categoria antes de comparar
+        const categoriaNormalizada = normalizarCategoria(transaction.category);
+        const categoryMatch = !filterCategory.value || categoriaNormalizada === filterCategory.value;
         const typeMatch = !filterType.value || transaction.type === filterType.value;
 
         return dateMatch && categoryMatch && typeMatch;
-        });
-        renderTransactionViews(filteredTransactions);
-        updateFilteredSummary(filteredTransactions);
-    }
+    });
+
+    renderTransactionViews(filteredTransactions);
+    updateFilteredSummary(filteredTransactions);
+}
 
     function clearFilters() {
         filterStartDate.value = '';
@@ -433,30 +432,47 @@
         updateFilteredSummary(transactions);
     }
 
-    function updateFilteredSummary(filteredList) {
-    // Se a lista filtrada tiver o mesmo tamanho da lista original, significa que nenhum filtro está ativo.
-    // Neste caso, escondemos o card de resumo.
-    if (filteredList.length === transactions.length && transactions.length > 0) {
-        filteredSummaryEl.classList.add('hidden');
-        return; // Para a execução da função aqui.
-    }
+    function updateFilteredSummary(filteredTransactions) {
+    let totalEntradas = 0;
+    let totalSaidas = 0;
+    const categorias = {};
 
-    // Se a lista estiver vazia por causa de um filtro, mostramos R$ 0,00
-    if (filteredList.length === 0) {
-        filteredSummaryTotalEl.textContent = formatCurrency(0);
-        filteredSummaryEl.classList.remove('hidden');
-        return;
-    }
+    filteredTransactions.forEach(t => {
+        const categoriaNormalizada = normalizarCategoria(t.category);
+        const valor = t.amount;
 
-        // Calcula as entradas, saídas e o saldo apenas para os itens filtrados
-        const entradas = filteredList.filter(t => t.type === 'Entrada').reduce((acc, t) => acc + t.amount, 0);
-        const saidas = filteredList.filter(t => t.type === 'Saída').reduce((acc, t) => acc + t.amount, 0);
-        const saldo = entradas - saidas;
+        if (t.type === "Entrada") {
+            totalEntradas += valor;
+        } else {
+            totalSaidas += valor;
+        }
 
-        // Atualiza o texto com o valor formatado e garante que o card esteja visível
-        filteredSummaryTotalEl.textContent = formatCurrency(saldo);
-        filteredSummaryEl.classList.remove('hidden');
+        if (!categorias[categoriaNormalizada]) {
+            categorias[categoriaNormalizada] = 0;
+        }
+        categorias[categoriaNormalizada] += valor * (t.type === "Entrada" ? 1 : -1);
+    });
+
+    // Atualiza resumo geral
+    document.getElementById("totalEntradas").textContent =
+        `R$ ${totalEntradas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+    document.getElementById("totalSaidas").textContent =
+        `R$ ${totalSaidas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+    document.getElementById("saldoFinal").textContent =
+        `R$ ${(totalEntradas - totalSaidas).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+
+    // Atualiza resumo por categoria (se tiver uma div/lista específica)
+    const resumoCategorias = document.getElementById("resumoCategorias");
+    if (resumoCategorias) {
+        resumoCategorias.innerHTML = "";
+        for (const [cat, valor] of Object.entries(categorias)) {
+            const li = document.createElement("li");
+            li.className = "text-sm text-gray-700";
+            li.textContent = `${cat}: R$ ${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+            resumoCategorias.appendChild(li);
+        }
     }
+}
 
     function saveTransactionsToStorage() {
         localStorage.setItem('finance-transactions', JSON.stringify(transactions));
@@ -468,68 +484,58 @@
 
     // PARTE 4: FUNÇÕES DE RENDERIZAÇÃO E UI (VISUAL)
     function renderTransactionViews(transactionsToRender = transactions) {
-        transactionTableBody.innerHTML = '';
-        slider.innerHTML = '';
+    transactionTableBody.innerHTML = '';
+    slider.innerHTML = '';
 
-        if (transactionsToRender.length === 0) {
-            // --- PARTE PARA LISTA VAZIA ---
-            // Mostra a mensagem na tabela (para desktop)
-            transactionTableBody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 py-4">Nenhum lançamento encontrado.</td></tr>`;
-        
-            // Garante que o carrossel esteja visível para mostrar a mensagem
-            carouselContainer.classList.remove('hidden'); 
-        
-            // Coloca a mensagem de "vazio" dentro do slider
-            slider.innerHTML = `<div class="text-center text-gray-500 py-8">Nenhum lançamento encontrado.</div>`;
-        
-            // Atualiza os botões e contador para o estado de "vazio"
-            currentSlide = 0;
-            updateNavButtons(transactionsToRender);
-            return;
+    if (transactionsToRender.length === 0) {
+        transactionTableBody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 py-4">Nenhum lançamento encontrado.</td></tr>`;
+        carouselContainer.classList.remove('hidden'); 
+        slider.innerHTML = `<div class="text-center text-gray-500 py-8">Nenhum lançamento encontrado.</div>`;
+        currentSlide = 0;
+        updateNavButtons(transactionsToRender);
+        return;
+    }
+
+    carouselContainer.classList.remove('hidden');
+
+    const sortedTransactions = [...transactionsToRender].sort((a, b) => {
+        let dateA = a.date.includes('/') ? new Date(a.date.split('/').reverse().join('-')) : new Date(a.date);
+        let dateB = b.date.includes('/') ? new Date(b.date.split('/').reverse().join('-')) : new Date(b.date);
+        if (dateB - dateA !== 0) {
+            return dateB - dateA;
         }
+        return b.id - a.id;
+    });
 
-        // --- PARTE PARA QUANDO HÁ TRANSAÇÕES ---
-        // Garante que o carrossel esteja visível
-        carouselContainer.classList.remove('hidden');
+    sortedTransactions.forEach(t => {
+        const isEntrada = t.type === 'Entrada';
+        const valorFormatado = t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const corValor = isEntrada ? 'text-green-600' : 'text-red-600';
+        const sinal = isEntrada ? '+' : '-';
+        const categoriaNormalizada = normalizarCategoria(t.category);
 
-        // Bloco de ordenação (que já corrigimos antes)
-        const sortedTransactions = [...transactionsToRender].sort((a, b) => {
-            let dateA = a.date.includes('/') ? new Date(a.date.split('/').reverse().join('-')) : new Date(a.date);
-            let dateB = b.date.includes('/') ? new Date(b.date.split('/').reverse().join('-')) : new Date(b.date);
-            if (dateB - dateA !== 0) {
-                return dateB - dateA;
-            }
-            return b.id - a.id;
-        });
-
-        // Loop para criar os elementos (seu código original aqui, está correto)
-        sortedTransactions.forEach(t => {
-            const isEntrada = t.type === 'Entrada';
-            const valorFormatado = t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            const corValor = isEntrada ? 'text-green-600' : 'text-red-600';
-            const sinal = isEntrada ? '+' : '-';
-            const tableRow = document.createElement('tr');
-            tableRow.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(t.date)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${t.description}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${t.category}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${corValor}">${sinal} R$ ${valorFormatado}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+        const tableRow = document.createElement('tr');
+        tableRow.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(t.date)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${t.description}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${categoriaNormalizada}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${corValor}">${sinal} R$ ${valorFormatado}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                 <button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900">Excluir</button>
             </td>`;
         transactionTableBody.appendChild(tableRow);
+
         const slideDiv = document.createElement('div');
         slideDiv.className = 'carousel-slide';
-            slideDiv.innerHTML = `
+        slideDiv.innerHTML = `
             <div class="slide-data-point"><span class="slide-label">Data:</span><span class="text-sm text-gray-800">${formatDate(t.date)}</span></div>
             <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900">${t.description}</span></div>
-            <div class="slide-data-point"><span class="slide-label">Categoria:</span><span class="text-sm text-gray-800">${t.category}</span></div>
+            <div class="slide-data-point"><span class="slide-label">Categoria:</span><span class="text-sm text-gray-800">${categoriaNormalizada}</span></div>
             <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="text-sm font-bold ${corValor}">${sinal} R$ ${valorFormatado}</span></div>
             <div class="mt-4 text-center"><button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Lançamento</button></div>`;
         slider.appendChild(slideDiv);
     });
 
-    // Mostra o primeiro slide
     showSlide(0, transactionsToRender);
 }                                       
 
@@ -699,6 +705,14 @@
 
     ccPrevBtn.addEventListener('click', () => showCreditCardSlide(ccCurrentSlide - 1));
     ccNextBtn.addEventListener('click', () => showCreditCardSlide(ccCurrentSlide + 1));
+
+    //nova função
+    function normalizarCategoria(categoria) {
+    if (categoria === "Pix" || categoria === "Cartão de Débito") {
+        return "Cartão de Débito/Pix";
+    }
+    return categoria;
+}
     
     updateAll();
 </script>
