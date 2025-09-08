@@ -471,44 +471,42 @@
     function updateFilteredSummary(filteredTransactions) {
     let totalEntradas = 0;
     let totalSaidas = 0;
-    const categorias = {};
 
     filteredTransactions.forEach(t => {
-        const categoriaNormalizada = normalizarCategoria(t.category);
-        const valor = t.amount;
-
         if (t.type === "Entrada") {
-            totalEntradas += valor;
+            totalEntradas += t.amount;
         } else {
-            totalSaidas += valor;
+            totalSaidas += t.amount; // Use Math.abs(t.amount) se os valores de saída forem negativos
         }
-
-        if (!categorias[categoriaNormalizada]) {
-            categorias[categoriaNormalizada] = 0;
-        }
-        categorias[categoriaNormalizada] += valor * (t.type === "Entrada" ? 1 : -1);
     });
 
-    // Atualiza resumo geral
-    document.getElementById("totalEntradas").textContent =
-        `R$ ${totalEntradas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-    document.getElementById("totalSaidas").textContent =
-        `R$ ${totalSaidas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-    document.getElementById("saldoFinal").textContent =
-        `R$ ${(totalEntradas - totalSaidas).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+    let valorExibido;
+    // Pega o valor do <select> com id="filter-type"
+    const tipoFiltrado = document.getElementById('filter-type').value;
 
-    // Atualiza resumo por categoria (se tiver uma div/lista específica)
-    const resumoCategorias = document.getElementById("resumoCategorias");
-    if (resumoCategorias) {
-        resumoCategorias.innerHTML = "";
-        for (const [cat, valor] of Object.entries(categorias)) {
-            const li = document.createElement("li");
-            li.className = "text-sm text-gray-700";
-            li.textContent = `${cat}: R$ ${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-            resumoCategorias.appendChild(li);
-        }
+    if (tipoFiltrado === 'Saída') {
+        // Se o filtro for "Saída", o valor a ser exibido é o total de saídas
+        valorExibido = totalSaidas;
+    } else if (tipoFiltrado === 'Entrada') {
+        // Se o filtro for "Entrada", o valor a ser exibido é o total de entradas
+        valorExibido = totalEntradas;
+    } else {
+        // Caso contrário (filtro "Todos" ou qualquer outro filtro), calcula o saldo
+        valorExibido = totalEntradas - totalSaidas;
+    }
+
+    // Agora usamos a variável correta para mostrar o valor
+    filteredSummaryTotalEl.textContent = `R$ ${valorExibido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+
+    // A lógica para mostrar/esconder o resumo continua a mesma
+    const anyFilterApplied = filterStartDate.value || filterEndDate.value || filterCategory.value || filterType.value;
+    if (anyFilterApplied && filteredTransactions.length > 0) {
+        filteredSummaryEl.classList.remove('hidden');
+    } else {
+        filteredSummaryEl.classList.add('hidden');
     }
 }
+
 
     function saveTransactionsToStorage() {
         localStorage.setItem('finance-transactions', JSON.stringify(transactions));
@@ -582,17 +580,24 @@
     function editTransaction(id) {
     const t = transactions.find(item => item.id === id);
     if (t) {
-        showModal('Deseja editar este lançamento?', () =>{
-        document.getElementById("date").value = t.date;
-        document.getElementById("description").value = t.description;
-        document.getElementById("category").value = t.category;
-        document.getElementById("amount").value = t.amount;
-        document.getElementById("type").value = t.type;
+        showModal('Deseja editar este lançamento?', () => {
+            // Ajusta data para YYYY-MM-DD se estiver em DD/MM/YYYY
+            let dateValue = t.date;
+            if (t.date.includes('/')) {
+                const [day, month, year] = t.date.split('/');
+                dateValue = `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}`;
+            }
+            document.getElementById("date").value = dateValue;
+            document.getElementById("description").value = t.description;
+            document.getElementById("category").value = t.category;
+            document.getElementById("amount").value = t.amount;
+            document.getElementById("type").value = t.type;
 
-        editingTransactionId = id; // guarda qual está sendo editado
+            editingTransactionId = id; // guarda qual está sendo editado
         });
     }
 }
+
     //funcao para editar os lancamentos no cartao de credito
     function editCreditCardPurchase(id) {
     const purchase = creditCardPurchases.find(p => p.id === id);
@@ -779,7 +784,8 @@
 
     //nova função
     function normalizarCategoria(categoria) {
-    if (categoria === "Pix" || categoria === "Cartão de Débito") {
+    const lower = categoria.toLowerCase();
+    if (lower.includes("pix") || lower.includes("cartão de débito")) {
         return "Cartão de Débito/Pix";
     }
     return categoria;
