@@ -330,6 +330,10 @@
     // PARTE 2: ESTADO DA APLICAÇÃO (VARIÁVEIS GLOBAIS)
     let transactions = JSON.parse(localStorage.getItem('finance-transactions')) || [];
     let creditCardPurchases = JSON.parse(localStorage.getItem('finance-cc-purchases')) || [];
+    
+    // ALTERAÇÃO: Variável de estado para a lista de transações atualmente em exibição.
+    let currentlyDisplayedTransactions = [];
+
     let onConfirmCallback = null;
     let currentSlide = 0;
     let ccCurrentSlide = 0;
@@ -350,12 +354,10 @@
         }
 
         if (editingTransactionId) {
-        // Atualiza lançamento existente
             const index = transactions.findIndex(t => t.id === editingTransactionId);
             transactions[index] = { id: editingTransactionId, date, description, category, type, amount };
-            editingTransactionId = null; // limpa edição
+            editingTransactionId = null;
         } else {
-            // Adiciona novo lançamento
             transactions.push({ id: Date.now(), date, description, category, type, amount });
         }
 
@@ -365,52 +367,53 @@
     }
 
     function addCreditCardPurchase(e) {
-    e.preventDefault();
-    const description = document.getElementById('cc-description').value;
-    const amount = parseFloat(document.getElementById('cc-amount').value);
-    const installmentCurrent = document.getElementById('cc-installment-current').value;
-    const installmentTotal = document.getElementById('cc-installment-total').value;
+        e.preventDefault();
+        const description = document.getElementById('cc-description').value;
+        const amount = parseFloat(document.getElementById('cc-amount').value);
+        const installmentCurrent = document.getElementById('cc-installment-current').value;
+        const installmentTotal = document.getElementById('cc-installment-total').value;
 
-    if (!description || isNaN(amount) || amount <= 0) {
-        showModal('Por favor, preencha a descrição e o valor com dados válidos.', null); 
-        return;
+        if (!description || isNaN(amount) || amount <= 0) {
+            showModal('Por favor, preencha a descrição e o valor com dados válidos.', null); 
+            return;
+        }
+        if ((installmentCurrent && !installmentTotal) || (!installmentCurrent && installmentTotal)) {
+            showModal('Para compras parceladas, preencha a parcela atual e a total.', null); 
+            return;
+        }
+
+        if (editingCreditCardId) {
+            const index = creditCardPurchases.findIndex(p => p.id === editingCreditCardId);
+            creditCardPurchases[index] = {
+                id: editingCreditCardId,
+                description,
+                amount,
+                installmentCurrent: installmentCurrent ? parseInt(installmentCurrent) : null,
+                installmentTotal: installmentTotal ? parseInt(installmentTotal) : null
+            };
+            editingCreditCardId = null;
+        } else {
+            creditCardPurchases.push({
+                id: Date.now(),
+                description,
+                amount,
+                installmentCurrent: installmentCurrent ? parseInt(installmentCurrent) : null,
+                installmentTotal: installmentTotal ? parseInt(installmentTotal) : null
+            });
+        }
+
+        updateAll();
+        creditCardForm.reset();
     }
-    if ((installmentCurrent && !installmentTotal) || (!installmentCurrent && installmentTotal)) {
-        showModal('Para compras parceladas, preencha a parcela atual e a total.', null); 
-        return;
-    }
-
-    if (editingCreditCardId) {
-        // Atualiza compra existente
-        const index = creditCardPurchases.findIndex(p => p.id === editingCreditCardId);
-        creditCardPurchases[index] = {
-            id: editingCreditCardId,
-            description,
-            amount,
-            installmentCurrent: installmentCurrent ? parseInt(installmentCurrent) : null,
-            installmentTotal: installmentTotal ? parseInt(installmentTotal) : null
-        };
-        editingCreditCardId = null; // limpa edição
-    } else {
-        // Adiciona nova compra
-        creditCardPurchases.push({
-            id: Date.now(),
-            description,
-            amount,
-            installmentCurrent: installmentCurrent ? parseInt(installmentCurrent) : null,
-            installmentTotal: installmentTotal ? parseInt(installmentTotal) : null
-        });
-    }
-
-    updateAll();
-    creditCardForm.reset();
-}
-
 
     window.deleteTransaction = function(id) {
         showModal('Tem certeza que deseja excluir este lançamento?', () => {
             transactions = transactions.filter(t => t.id !== id);
             updateAll();
+            // Se os filtros estiverem ativos, reaplica para atualizar a visão
+            if (filterStartDate.value || filterEndDate.value || filterCategory.value || filterType.value) {
+                applyFilters();
+            }
         });
     }
 
@@ -421,92 +424,86 @@
         });
     }
 
+    // ALTERAÇÃO 2: Funções de filtro agora gerenciam a lista 'currentlyDisplayedTransactions'
     function applyFilters() {
-    const startDateString = filterStartDate.value;
-    const endDateString = filterEndDate.value;
+        const startDateString = filterStartDate.value;
+        const endDateString = filterEndDate.value;
+        const startDate = startDateString ? new Date(startDateString + 'T00:00:00') : null;
+        const endDate = endDateString ? new Date(endDateString + 'T00:00:00') : null;
 
-    const startDate = startDateString ? new Date(startDateString + 'T00:00:00') : null;
-    const endDate = endDateString ? new Date(endDateString + 'T00:00:00') : null;
+        const filteredTransactions = transactions.filter(transaction => {
+            let transactionDate;
+            const dateString = transaction.date;
+            if (dateString.includes('/')) {
+                const [day, month, year] = dateString.split('/');
+                transactionDate = new Date(year, month - 1, day);
+            } else if (dateString.includes('-')) {
+                transactionDate = new Date(dateString + 'T00:00:00');
+            } else { return false; }
 
-    const filteredTransactions = transactions.filter(transaction => {
-        let transactionDate;
-        const dateString = transaction.date;
+            if (isNaN(transactionDate.getTime())) { return false; }
 
-        if (dateString.includes('/')) {
-            const [day, month, year] = dateString.split('/');
-            transactionDate = new Date(year, month - 1, day);
-        } else if (dateString.includes('-')) {
-            transactionDate = new Date(dateString + 'T00:00:00');
-        } else {
-            return false;
-        }
-
-        if (isNaN(transactionDate.getTime())) {
-            return false;
-        }
-
-        const dateMatch = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
+            const dateMatch = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
+            const categoriaNormalizada = normalizarCategoria(transaction.category);
+            const categoryMatch = !filterCategory.value || categoriaNormalizada === filterCategory.value;
+            const typeMatch = !filterType.value || transaction.type === filterType.value;
+            return dateMatch && categoryMatch && typeMatch;
+        });
         
-        // 🔹 normaliza categoria antes de comparar
-        const categoriaNormalizada = normalizarCategoria(transaction.category);
-        const categoryMatch = !filterCategory.value || categoriaNormalizada === filterCategory.value;
-        const typeMatch = !filterType.value || transaction.type === filterType.value;
+        // Atualiza a lista ativa e reseta o slide
+        currentlyDisplayedTransactions = filteredTransactions;
+        currentSlide = 0;
 
-        return dateMatch && categoryMatch && typeMatch;
-    });
-
-    renderTransactionViews(filteredTransactions);
-    updateFilteredSummary(filteredTransactions);
-}
+        renderTransactionViews(currentlyDisplayedTransactions);
+        updateFilteredSummary(currentlyDisplayedTransactions);
+    }
 
     function clearFilters() {
         filterStartDate.value = '';
         filterEndDate.value = '';
         filterCategory.value = '';
         filterType.value = '';
-        renderTransactionViews(transactions);
-        updateFilteredSummary(transactions);
+        
+        // Restaura a lista ativa para a original e reseta o slide
+        currentlyDisplayedTransactions = transactions;
+        currentSlide = 0;
+
+        renderTransactionViews(currentlyDisplayedTransactions);
+        updateFilteredSummary(currentlyDisplayedTransactions); // Passa a lista correta
     }
 
     function updateFilteredSummary(filteredTransactions) {
-    let totalEntradas = 0;
-    let totalSaidas = 0;
+        let totalEntradas = 0;
+        let totalSaidas = 0;
+        filteredTransactions.forEach(t => {
+            if (t.type === "Entrada") {
+                totalEntradas += t.amount;
+            } else {
+                totalSaidas += t.amount;
+            }
+        });
 
-    filteredTransactions.forEach(t => {
-        if (t.type === "Entrada") {
-            totalEntradas += t.amount;
+        let valorExibido;
+        const tipoFiltrado = document.getElementById('filter-type').value;
+
+        if (tipoFiltrado === 'Saída') {
+            valorExibido = totalSaidas;
+        } else if (tipoFiltrado === 'Entrada') {
+            valorExibido = totalEntradas;
         } else {
-            totalSaidas += t.amount; // Use Math.abs(t.amount) se os valores de saída forem negativos
+            valorExibido = totalEntradas - totalSaidas;
         }
-    });
 
-    let valorExibido;
-    // Pega o valor do <select> com id="filter-type"
-    const tipoFiltrado = document.getElementById('filter-type').value;
-
-    if (tipoFiltrado === 'Saída') {
-        // Se o filtro for "Saída", o valor a ser exibido é o total de saídas
-        valorExibido = totalSaidas;
-    } else if (tipoFiltrado === 'Entrada') {
-        // Se o filtro for "Entrada", o valor a ser exibido é o total de entradas
-        valorExibido = totalEntradas;
-    } else {
-        // Caso contrário (filtro "Todos" ou qualquer outro filtro), calcula o saldo
-        valorExibido = totalEntradas - totalSaidas;
+        filteredSummaryTotalEl.textContent = `R$ ${valorExibido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+        const anyFilterApplied = filterStartDate.value || filterEndDate.value || filterCategory.value || filterType.value;
+        if (anyFilterApplied && filteredTransactions.length > 0) {
+            filteredSummaryEl.classList.remove('hidden');
+        } else {
+            filteredSummaryEl.classList.add('hidden');
+        }
     }
-
-    // Agora usamos a variável correta para mostrar o valor
-    filteredSummaryTotalEl.textContent = `R$ ${valorExibido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-
-    // A lógica para mostrar/esconder o resumo continua a mesma
-    const anyFilterApplied = filterStartDate.value || filterEndDate.value || filterCategory.value || filterType.value;
-    if (anyFilterApplied && filteredTransactions.length > 0) {
-        filteredSummaryEl.classList.remove('hidden');
-    } else {
-        filteredSummaryEl.classList.add('hidden');
-    }
-}
-
+    
+    // A função updateDisplay que sugeri antes não é mais necessária, pois a lógica está em 'renderTransactionViews' e 'updateNavButtons'
 
     function saveTransactionsToStorage() {
         localStorage.setItem('finance-transactions', JSON.stringify(transactions));
@@ -516,102 +513,90 @@
         localStorage.setItem('finance-cc-purchases', JSON.stringify(creditCardPurchases));
     }
     
-
     // PARTE 4: FUNÇÕES DE RENDERIZAÇÃO E UI (VISUAL)
-    function renderTransactionViews(transactionsToRender = transactions) {
-    transactionTableBody.innerHTML = '';
-    slider.innerHTML = '';
+    function renderTransactionViews(transactionsToRender) {
+        transactionTableBody.innerHTML = '';
+        slider.innerHTML = '';
 
-    if (transactionsToRender.length === 0) {
-        transactionTableBody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 py-4">Nenhum lançamento encontrado.</td></tr>`;
-        carouselContainer.classList.remove('hidden'); 
-        slider.innerHTML = `<div class="text-center text-gray-500 py-8">Nenhum lançamento encontrado.</div>`;
-        currentSlide = 0;
-        updateNavButtons(transactionsToRender);
-        return;
-    }
-
-    carouselContainer.classList.remove('hidden');
-
-    const sortedTransactions = [...transactionsToRender].sort((a, b) => {
-        let dateA = a.date.includes('/') ? new Date(a.date.split('/').reverse().join('-')) : new Date(a.date);
-        let dateB = b.date.includes('/') ? new Date(b.date.split('/').reverse().join('-')) : new Date(b.date);
-        if (dateB - dateA !== 0) {
-            return dateB - dateA;
+        if (transactionsToRender.length === 0) {
+            transactionTableBody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 py-4">Nenhum lançamento encontrado.</td></tr>`;
+            slider.innerHTML = `<div class="carousel-slide text-center text-gray-500 py-8">Nenhum lançamento encontrado.</div>`;
+            updateNavButtons(transactionsToRender);
+            return;
         }
-        return b.id - a.id;
-    });
 
-    sortedTransactions.forEach(t => {
-        const isEntrada = t.type === 'Entrada';
-        const valorFormatado = t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const corValor = isEntrada ? 'text-green-600' : 'text-red-600';
-        const sinal = isEntrada ? '+' : '-';
-        const categoriaNormalizada = normalizarCategoria(t.category);
+        const sortedTransactions = [...transactionsToRender].sort((a, b) => {
+            let dateA = a.date.includes('/') ? new Date(a.date.split('/').reverse().join('-')) : new Date(a.date);
+            let dateB = b.date.includes('/') ? new Date(b.date.split('/').reverse().join('-')) : new Date(b.date);
+            if (dateB - dateA !== 0) { return dateB - dateA; }
+            return b.id - a.id;
+        });
 
-        const tableRow = document.createElement('tr');
-        tableRow.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(t.date)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${t.description}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${categoriaNormalizada}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${corValor}">${sinal} R$ ${valorFormatado}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                <button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir</button>
-                <button onclick="editTransaction(${t.id})" class="text-yellow-600 hover:text-yellow-900 text-sm font-medium">Editar</button>
-            </td>`;
-        transactionTableBody.appendChild(tableRow);
+        sortedTransactions.forEach(t => {
+            const isEntrada = t.type === 'Entrada';
+            const valorFormatado = t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const corValor = isEntrada ? 'text-green-600' : 'text-red-600';
+            const sinal = isEntrada ? '+' : '-';
+            const categoriaNormalizada = normalizarCategoria(t.category);
 
-        const slideDiv = document.createElement('div');
-        slideDiv.className = 'carousel-slide';
-        slideDiv.innerHTML = `
-            <div class="slide-data-point"><span class="slide-label">Data:</span><span class="text-sm text-gray-800">${formatDate(t.date)}</span></div>
-            <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900">${t.description}</span></div>
-            <div class="slide-data-point"><span class="slide-label">Categoria:</span><span class="text-sm text-gray-800">${categoriaNormalizada}</span></div>
-            <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="text-sm font-bold ${corValor}">${sinal} R$ ${valorFormatado}</span></div>
-            <div class="mt-4 text-center"><button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Lançamento</button></div>
-            <div class="mt-4 text-center"><button onclick="editTransaction(${t.id})" class="text-yellow-600 hover:text-yellow-900 text-sm font-medium">Editar Lançamento</button></div>`;
-        slider.appendChild(slideDiv);
-    });
+            const tableRow = document.createElement('tr');
+            tableRow.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(t.date)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${t.description}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${categoriaNormalizada}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${corValor}">${sinal} R$ ${valorFormatado}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                    <button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir</button>
+                    <button onclick="editTransaction(${t.id})" class="text-yellow-600 hover:text-yellow-900 text-sm font-medium">Editar</button>
+                </td>`;
+            transactionTableBody.appendChild(tableRow);
 
-    showSlide(0, transactionsToRender);
-}    
+            const slideDiv = document.createElement('div');
+            slideDiv.className = 'carousel-slide';
+            slideDiv.innerHTML = `
+                <div class="slide-data-point"><span class="slide-label">Data:</span><span class="text-sm text-gray-800">${formatDate(t.date)}</span></div>
+                <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900">${t.description}</span></div>
+                <div class="slide-data-point"><span class="slide-label">Categoria:</span><span class="text-sm text-gray-800">${categoriaNormalizada}</span></div>
+                <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="text-sm font-bold ${corValor}">${sinal} R$ ${valorFormatado}</span></div>
+                <div class="mt-4 text-center"><button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Lançamento</button></div>
+                <div class="mt-4 text-center"><button onclick="editTransaction(${t.id})" class="text-yellow-600 hover:text-yellow-900 text-sm font-medium">Editar Lançamento</button></div>`;
+            slider.appendChild(slideDiv);
+        });
 
-    //funcao para editar os lancamentos em caso de erro 
+        showSlide(currentSlide, transactionsToRender);
+    }
+
     function editTransaction(id) {
-    const t = transactions.find(item => item.id === id);
-    if (t) {
-        showModal('Deseja editar este lançamento?', () => {
-            // Ajusta data para YYYY-MM-DD se estiver em DD/MM/YYYY
-            let dateValue = t.date;
-            if (t.date.includes('/')) {
-                const [day, month, year] = t.date.split('/');
-                dateValue = `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}`;
-            }
-            document.getElementById("date").value = dateValue;
-            document.getElementById("description").value = t.description;
-            document.getElementById("category").value = t.category;
-            document.getElementById("amount").value = t.amount;
-            document.getElementById("type").value = t.type;
-
-            editingTransactionId = id; // guarda qual está sendo editado
-        });
+        const t = transactions.find(item => item.id === id);
+        if (t) {
+            showModal('Deseja editar este lançamento?', () => {
+                let dateValue = t.date;
+                if (t.date.includes('/')) {
+                    const [day, month, year] = t.date.split('/');
+                    dateValue = `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}`;
+                }
+                document.getElementById("date").value = dateValue;
+                document.getElementById("description").value = t.description;
+                document.getElementById("category").value = t.category;
+                document.getElementById("amount").value = t.amount;
+                document.getElementById("type").value = t.type;
+                editingTransactionId = id;
+            });
+        }
     }
-}
 
-    //funcao para editar os lancamentos no cartao de credito
     function editCreditCardPurchase(id) {
-    const purchase = creditCardPurchases.find(p => p.id === id);
-    if (purchase) {
-        showModal('Deseja editar esta compra do cartão?', () => {
-            document.getElementById('cc-description').value = purchase.description;
-            document.getElementById('cc-amount').value = purchase.amount;
-            document.getElementById('cc-installment-current').value = purchase.installmentCurrent || '';
-            document.getElementById('cc-installment-total').value = purchase.installmentTotal || '';
-            
-            editingCreditCardId = id; // guarda o id da compra que está sendo editada
-        });
+        const purchase = creditCardPurchases.find(p => p.id === id);
+        if (purchase) {
+            showModal('Deseja editar esta compra do cartão?', () => {
+                document.getElementById('cc-description').value = purchase.description;
+                document.getElementById('cc-amount').value = purchase.amount;
+                document.getElementById('cc-installment-current').value = purchase.installmentCurrent || '';
+                document.getElementById('cc-installment-total').value = purchase.installmentTotal || '';
+                editingCreditCardId = id;
+            });
+        }
     }
-}
 
     function renderCreditCardViews() {
         creditCardTableBody.innerHTML = '';
@@ -699,7 +684,7 @@
         onConfirmCallback = null;
     }
 
-    function showSlide(index, sourceArray = transactions) {
+    function showSlide(index, sourceArray) {
         if (sourceArray.length === 0) return;
         if (index >= sourceArray.length) index = sourceArray.length - 1;
         if (index < 0) index = 0;
@@ -708,7 +693,7 @@
         updateNavButtons(sourceArray);
     }
 
-    function updateNavButtons(sourceArray = transactions) {
+    function updateNavButtons(sourceArray) {
         if (sourceArray.length === 0) {
             slideCounter.textContent = '0 / 0';
             prevBtn.disabled = true;
@@ -754,12 +739,20 @@
         }
         return dateString;
     }
-
     
+    function normalizarCategoria(categoria) {
+        const lower = categoria.toLowerCase();
+        if (lower.includes("pix") || lower.includes("cartão de débito")) {
+            return "Cartão de Débito/Pix";
+        }
+        return categoria;
+    }
 
     // PARTE 6: FUNÇÃO PRINCIPAL DE ATUALIZAÇÃO
     function updateAll() {
-        renderTransactionViews();
+        // ALTERAÇÃO: Garante que a lista ativa esteja sincronizada quando tudo é atualizado
+        currentlyDisplayedTransactions = transactions;
+        renderTransactionViews(currentlyDisplayedTransactions);
         updateSummary();
         saveTransactionsToStorage();
         
@@ -776,20 +769,12 @@
     filterBtn.addEventListener('click', applyFilters);
     clearFilterBtn.addEventListener('click', clearFilters);
 
-    prevBtn.addEventListener('click', () => showSlide(currentSlide - 1));
-    nextBtn.addEventListener('click', () => showSlide(currentSlide + 1));
+    // ALTERAÇÃO: Os botões agora passam a lista ativa para a função showSlide
+    prevBtn.addEventListener('click', () => showSlide(currentSlide - 1, currentlyDisplayedTransactions));
+    nextBtn.addEventListener('click', () => showSlide(currentSlide + 1, currentlyDisplayedTransactions));
 
     ccPrevBtn.addEventListener('click', () => showCreditCardSlide(ccCurrentSlide - 1));
     ccNextBtn.addEventListener('click', () => showCreditCardSlide(ccCurrentSlide + 1));
-
-    //nova função
-    function normalizarCategoria(categoria) {
-    const lower = categoria.toLowerCase();
-    if (lower.includes("pix") || lower.includes("cartão de débito")) {
-        return "Cartão de Débito/Pix";
-    }
-    return categoria;
-}
     
     updateAll();
 </script>
