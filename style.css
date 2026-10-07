@@ -1,0 +1,57 @@
+body {
+            font-family: 'Inter', sans-serif;
+        }
+        .summary-card {
+            transition: all 0.3s ease-in-out;
+        }
+
+        .carousel-slide {
+            width: 100%;
+            flex-shrink: 0;
+            padding: 1.5rem;
+            box-sizing: border-box;
+        }
+
+        .slide-data-point {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .slide-data-point:last-child {
+            border-bottom: none;
+        }
+
+        .slide-label {
+            font-weight: 600;
+            color: #4b5563;
+        }
+
+        .carousel-item {
+            min-width: 100%;
+            box-sizing: border-box;
+        }
+
+        #transaction-table-container,
+        #credit-card-table-container {
+            display: none;
+        }
+
+        #transaction-carousel-container,
+        #credit-card-carousel-container {
+            display: block;
+        }
+
+        /* Telas Grandes (Desktop): Inverte a visibilidade */
+        @media (min-width: 769px) {
+            #transaction-table-container,
+            #credit-card-table-container {
+                display: block; /* Tabelas aparecem */
+            }
+            #transaction-carousel-container,
+            #credit-card-carousel-container {
+                display: none;  /* Carrosséis desaparecem */
+            }
+        }
