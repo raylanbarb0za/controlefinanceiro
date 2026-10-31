@@ -72,6 +72,7 @@
                 transactions.push({ id: Date.now(), date, description, category, type, amount });
             }
 
+            selectedMonth = monthOf(date);
             updateAll();
             transactionForm.reset();
             document.getElementById('date').valueAsDate = new Date();
@@ -142,7 +143,9 @@
             const startDate = startDateString ? new Date(startDateString + 'T00:00:00') : null;
             const endDate = endDateString ? new Date(endDateString + 'T00:00:00') : null;
 
-            const filteredTransactions = transactions.filter(transaction => {
+            // Com período informado, busca em todos os meses; sem período, filtra dentro do mês selecionado
+            const baseList = (startDate || endDate) ? transactions : getMonthTransactions();
+            const filteredTransactions = baseList.filter(transaction => {
                 let transactionDate;
                 const dateString = transaction.date;
                 if (dateString.includes('/')) {
@@ -176,7 +179,7 @@
             filterType.value = '';
 
             // Restaura a lista ativa para a original e reseta o slide
-            currentlyDisplayedTransactions = transactions;
+            currentlyDisplayedTransactions = getMonthTransactions();
             currentSlide = 0;
 
             renderTransactionViews(currentlyDisplayedTransactions);
@@ -253,7 +256,7 @@
                 const tableRow = document.createElement('tr');
                 tableRow.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(t.date)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${t.description}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${esc(t.description)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${categoriaNormalizada}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${corValor}">${sinal} R$ ${valorFormatado}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
@@ -266,7 +269,7 @@
                 slideDiv.className = 'carousel-slide';
                 slideDiv.innerHTML = `
                 <div class="slide-data-point"><span class="slide-label">Data:</span><span class="text-sm text-gray-800">${formatDate(t.date)}</span></div>
-                <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900">${t.description}</span></div>
+                <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900">${esc(t.description)}</span></div>
                 <div class="slide-data-point"><span class="slide-label">Categoria:</span><span class="text-sm text-gray-800">${categoriaNormalizada}</span></div>
                 <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="text-sm font-bold ${corValor}">${sinal} R$ ${valorFormatado}</span></div>
                 <div class="mt-4 text-center"><button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Lançamento</button></div>
@@ -325,7 +328,7 @@
                 if (p.installmentCurrent && p.installmentTotal) installmentText = `${p.installmentCurrent} / ${p.installmentTotal}`;
                 const tableRow = document.createElement('tr');
                 tableRow.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.description}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${esc(p.description)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">${formatCurrency(p.amount)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${installmentText}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
@@ -336,7 +339,7 @@
                 const slideDiv = document.createElement('div');
                 slideDiv.className = 'carousel-slide';
                 slideDiv.innerHTML = `
-                <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900 text-right">${p.description}</span></div>
+                <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900 text-right">${esc(p.description)}</span></div>
                 <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="text-sm font-bold text-red-600">${formatCurrency(p.amount)}</span></div>
                 <div class="slide-data-point"><span class="slide-label">Parcelas:</span><span class="text-sm text-gray-800">${installmentText}</span></div>
                 <div class="mt-4 text-center"><button onclick="deleteCreditCardPurchase(${p.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Lançamento</button></div>
@@ -347,12 +350,14 @@
         }
 
         function updateSummary() {
-            const entradas = transactions.filter(t => t.type === 'Entrada').reduce((acc, t) => acc + t.amount, 0);
-            const saidas = transactions.filter(t => t.type === 'Saída').reduce((acc, t) => acc + t.amount, 0);
+            const mes = getMonthTransactions();
+            const entradas = sumBy(mes, 'Entrada');
+            const saidas = sumBy(mes, 'Saída');
             const saldo = entradas - saidas;
             totalEntradasEl.textContent = formatCurrency(entradas);
             totalSaidasEl.textContent = formatCurrency(saidas);
             saldoFinalEl.textContent = formatCurrency(saldo);
+            document.getElementById('saldo-acumulado').textContent = 'Acumulado total: ' + formatCurrency(sumBy(transactions, 'Entrada') - sumBy(transactions, 'Saída'));
             saldoFinalCard.classList.remove('bg-blue-100', 'border-blue-200', 'bg-green-100', 'border-green-200', 'bg-red-100', 'border-red-200');
             saldoFinalEl.classList.remove('text-blue-900', 'text-green-900', 'text-red-900');
             if (saldo > 0) {
@@ -462,15 +467,154 @@
         // PARTE 6: FUNÇÃO PRINCIPAL DE ATUALIZAÇÃO
         function updateAll() {
             // ALTERAÇÃO: Garante que a lista ativa esteja sincronizada quando tudo é atualizado
-            currentlyDisplayedTransactions = transactions;
+            currentlyDisplayedTransactions = getMonthTransactions();
             renderTransactionViews(currentlyDisplayedTransactions);
             updateSummary();
+            renderMonthUI();
             saveTransactionsToStorage();
 
             renderCreditCardViews();
             updateCreditCardSummary();
             saveCreditCardPurchasesToStorage();
         }
+
+        // PARTE 6B: MÊS SELECIONADO, GRÁFICOS E BACKUP
+        const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+        const CORES = ['#4f46e5', '#f97316', '#10b981', '#ef4444', '#eab308', '#06b6d4', '#8b5cf6', '#64748b'];
+        const monthPicker = document.getElementById('month-picker');
+        let selectedMonth = monthKey(new Date());
+        let chartCategorias = null;
+        let chartMeses = null;
+
+        function monthKey(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
+        function monthOf(dateString) {
+            if (!dateString) return '';
+            if (dateString.includes('/')) { const [, m, y] = dateString.split('/'); return `${y}-${m.padStart(2, '0')}`; }
+            return dateString.slice(0, 7);
+        }
+        function shiftMonth(key, delta) { const [y, m] = key.split('-').map(Number); return monthKey(new Date(y, m - 1 + delta, 1)); }
+        function monthLabel(key) { const [y, m] = key.split('-'); return `${MESES[Number(m) - 1]}/${y}`; }
+        function getMonthTransactions() { return transactions.filter(t => monthOf(t.date) === selectedMonth); }
+        function sumBy(list, type) { return list.filter(t => t.type === type).reduce((acc, t) => acc + t.amount, 0); }
+        function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+        function setMonth(key) {
+            if (!key) return;
+            selectedMonth = key;
+            currentSlide = 0;
+            updateAll();
+            clearFilters();
+        }
+
+        function renderMonthUI() {
+            monthPicker.value = selectedMonth;
+            renderComparison();
+            renderCharts();
+            renderBackupInfo();
+        }
+
+        function renderComparison() {
+            const el = document.getElementById('month-compare');
+            const atual = sumBy(getMonthTransactions(), 'Saída');
+            const prev = shiftMonth(selectedMonth, -1);
+            const anterior = sumBy(transactions.filter(t => monthOf(t.date) === prev), 'Saída');
+            if (!anterior) { el.textContent = atual ? 'Sem saídas no mês anterior para comparar.' : ''; return; }
+            const pct = Math.round((atual - anterior) / anterior * 100);
+            el.textContent = pct === 0
+                ? `Suas saídas ficaram iguais às de ${monthLabel(prev)} (${formatCurrency(anterior)}).`
+                : `Suas saídas estão ${Math.abs(pct)}% ${pct > 0 ? 'maiores' : 'menores'} que em ${monthLabel(prev)} (${formatCurrency(anterior)}).`;
+        }
+
+        function renderCharts() {
+            const section = document.getElementById('charts-section');
+            if (typeof Chart === 'undefined') { section.classList.add('hidden'); return; }
+            const porCategoria = {};
+            getMonthTransactions().filter(t => t.type === 'Saída').forEach(t => {
+                const c = normalizarCategoria(t.category);
+                porCategoria[c] = (porCategoria[c] || 0) + t.amount;
+            });
+            const cats = Object.entries(porCategoria).sort((a, b) => b[1] - a[1]);
+            document.getElementById('chart-categorias-vazio').classList.toggle('hidden', cats.length > 0);
+            if (chartCategorias) chartCategorias.destroy();
+            chartCategorias = new Chart(document.getElementById('chart-categorias'), {
+                type: 'doughnut',
+                data: { labels: cats.map(c => c[0]), datasets: [{ data: cats.map(c => c[1]), backgroundColor: CORES }] },
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: ctx => `${ctx.label}: ${formatCurrency(ctx.parsed)}` } } } }
+            });
+
+            const keys = [5, 4, 3, 2, 1, 0].map(i => shiftMonth(selectedMonth, -i));
+            const porMes = keys.map(k => transactions.filter(t => monthOf(t.date) === k));
+            if (chartMeses) chartMeses.destroy();
+            chartMeses = new Chart(document.getElementById('chart-meses'), {
+                type: 'bar',
+                data: {
+                    labels: keys.map(k => `${k.slice(5)}/${k.slice(2, 4)}`),
+                    datasets: [
+                        { label: 'Entradas', data: porMes.map(l => sumBy(l, 'Entrada')), backgroundColor: '#10b981' },
+                        { label: 'Saídas', data: porMes.map(l => sumBy(l, 'Saída')), backgroundColor: '#ef4444' }
+                    ]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}` } } } }
+            });
+        }
+
+        function exportBackup() {
+            const data = { app: 'controle-financeiro', versao: 1, exportadoEm: new Date().toISOString(), transactions, creditCardPurchases };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `controle-financeiro-${new Date().toLocaleDateString('sv-SE')}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(a.href);
+            localStorage.setItem('finance-last-backup', String(Date.now()));
+            renderBackupInfo();
+        }
+
+        function importBackup(file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const data = JSON.parse(reader.result);
+                    const ok = Array.isArray(data.transactions) && Array.isArray(data.creditCardPurchases)
+                        && data.transactions.every(t => t && t.date && typeof t.amount === 'number');
+                    if (!ok) throw new Error('formato');
+                    showModal(`Importar ${data.transactions.length} lançamentos e ${data.creditCardPurchases.length} compras de cartão? Os dados atuais serão substituídos.`, () => {
+                        transactions = data.transactions;
+                        creditCardPurchases = data.creditCardPurchases;
+                        updateAll();
+                        clearFilters();
+                    });
+                } catch (err) {
+                    showModal('Arquivo inválido. Use um backup exportado por este site.', null);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function renderBackupInfo() {
+            const el = document.getElementById('backup-info');
+            const last = Number(localStorage.getItem('finance-last-backup')) || 0;
+            const dias = last ? Math.floor((Date.now() - last) / 86400000) : null;
+            el.textContent = last
+                ? `Último backup: ${new Date(last).toLocaleDateString('pt-BR')} ${dias > 0 ? `(há ${dias} dias)` : '(hoje)'}`
+                : 'Você ainda não fez nenhum backup.';
+            el.className = 'mt-3 text-sm ' + ((dias === null || dias >= 7) ? 'text-amber-700' : 'text-gray-600');
+        }
+
+        document.getElementById('month-prev').addEventListener('click', () => setMonth(shiftMonth(selectedMonth, -1)));
+        document.getElementById('month-next').addEventListener('click', () => setMonth(shiftMonth(selectedMonth, 1)));
+        document.getElementById('month-today').addEventListener('click', () => setMonth(monthKey(new Date())));
+        monthPicker.addEventListener('change', () => setMonth(monthPicker.value));
+        document.getElementById('export-btn').addEventListener('click', exportBackup);
+        document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file').click());
+        document.getElementById('import-file').addEventListener('change', e => {
+            if (e.target.files[0]) importBackup(e.target.files[0]);
+            e.target.value = '';
+        });
+        // Pede ao navegador para não apagar os dados automaticamente quando faltar espaço
+        if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
 
         // PARTE 7: INICIALIZAÇÃO E EVENT LISTENERS
         document.getElementById('date').valueAsDate = new Date();
