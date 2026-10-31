@@ -69,57 +69,6 @@
             </div>
         </section>
 
-        <section id="add-transaction" class="mb-8 bg-white p-6 rounded-lg shadow">
-            <h2 class="text-2xl font-bold mb-4">Adicionar Novo Lançamento</h2>
-            <form id="transaction-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                <div class="md:col-span-1">
-                    <label for="date" class="block text-sm font-medium text-gray-700">Data</label>
-                    <input type="date" id="date"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        required>
-                </div>
-                <div class="md:col-span-2">
-                    <label for="description" class="block text-sm font-medium text-gray-700">Descrição</label>
-                    <input type="text" id="description" placeholder="Ex: Salário"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        required>
-                </div>
-                <div class="md:col-span-1">
-                    <label for="category" class="block text-sm font-medium text-gray-700">Categoria</label>
-                    <select id="category"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option>Salário</option>
-                        <option>Cartão de Débito/Pix</option>
-                        <option>Uber/99</option>
-                        <option>Gastos Fora de Casa</option>
-                        <option>Gastos Pessoais</option>
-                        <option>Moradia</option>
-                        <option>Estivas</option>
-                        <option>Outros</option>
-                    </select>
-                </div>
-                <div class="md:col-span-1">
-                    <label for="type" class="block text-sm font-medium text-gray-700">Tipo</label>
-                    <select id="type"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="Entrada">Entrada</option>
-                        <option value="Saída">Saída</option>
-                    </select>
-                </div>
-                <div class="md:col-span-1">
-                    <label for="amount" class="block text-sm font-medium text-gray-700">Valor (R$)</label>
-                    <input type="number" id="amount" step="0.01" placeholder="150.50"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        required>
-                </div>
-                <div class="md:col-span-5">
-                    <button type="submit"
-                        class="w-full mt-4 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Adicionar
-                        Lançamento</button>
-                </div>
-            </form>
-        </section>
-
         <section id="transaction-list">
             <h2 class="text-2xl font-bold mb-4">Meus Lançamentos</h2>
             <div id="transaction-table-container">
