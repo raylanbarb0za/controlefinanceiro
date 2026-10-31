@@ -510,6 +510,7 @@
             monthPicker.value = selectedMonth;
             renderComparison();
             renderCharts();
+            renderQuickChips();
             renderBackupInfo();
         }
 
@@ -615,6 +616,117 @@
         });
         // Pede ao navegador para não apagar os dados automaticamente quando faltar espaço
         if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+
+        // PARTE 6C: LANÇAMENTO RÁPIDO (texto livre)
+        const quickInput = document.getElementById('quick-input');
+        const quickPreview = document.getElementById('quick-preview');
+        const REGRAS_CATEGORIA = [
+            ['Uber/99', /\b(uber|99|taxi|corrida)\b/],
+            ['Estivas', /\b(mercado|supermercado|feira|atacadao|acougue)\b/],
+            ['Gastos Fora de Casa', /\b(restaurante|lanche|almoco|jantar|ifood|pizza|cafe|padaria|sorvete)\b/],
+            ['Moradia', /\b(aluguel|luz|energia|agua|internet|condominio|iptu)\b/],
+            ['Cartão de Débito/Pix', /\b(pix|debito)\b/]
+        ];
+        const PALAVRAS_ENTRADA = /\b(salario|recebi|recebimento|freela|rendimento|reembolso|venda)\b/;
+
+        function sa(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+        function isoDate(d) { return d.toLocaleDateString('sv-SE'); }
+
+        function inferirCategoria(desc, type) {
+            const key = sa(desc);
+            const historico = [...transactions].filter(t => t.type === type).sort((a, b) => b.id - a.id);
+            const exata = historico.find(t => sa(t.description) === key);
+            if (exata) return normalizarCategoria(exata.category);
+            const primeira = key.split(' ')[0];
+            if (primeira.length >= 3) {
+                const parecida = historico.find(t => sa(t.description).split(' ')[0] === primeira);
+                if (parecida) return normalizarCategoria(parecida.category);
+            }
+            if (type === 'Entrada') return /salario/.test(key) ? 'Salário' : 'Outros';
+            const regra = REGRAS_CATEGORIA.find(([, re]) => re.test(key));
+            return regra ? regra[0] : 'Outros';
+        }
+
+        function parseQuick(text) {
+            if (!text.trim()) return null;
+            const plus = /^\s*\+/.test(text);
+            let s = ' ' + text.trim().replace(/^\+/, ' ') + ' ';
+            let date = new Date();
+            const dm = s.match(/\s(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s/);
+            const rel = s.match(/\s(hoje|ontem|anteontem)\s/i);
+            if (dm) {
+                const y = dm[3] ? (dm[3].length === 2 ? 2000 + Number(dm[3]) : Number(dm[3])) : date.getFullYear();
+                const d = new Date(y, Number(dm[2]) - 1, Number(dm[1]));
+                if (d.getMonth() !== Number(dm[2]) - 1) return { erro: 'Data inválida. Use dia/mês, como 15/10.' };
+                date = d;
+                s = s.replace(dm[0], ' ');
+            } else if (rel) {
+                date.setDate(date.getDate() - { hoje: 0, ontem: 1, anteontem: 2 }[rel[1].toLowerCase()]);
+                s = s.replace(rel[0], ' ');
+            }
+            const nums = [...s.matchAll(/(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/g)];
+            if (!nums.length) return { erro: 'Falta o valor. Exemplo: uber 23,50' };
+            const n = nums[nums.length - 1];
+            const raw = /^\d{1,3}(\.\d{3})+(,\d+)?$/.test(n[1]) ? n[1].replace(/\./g, '').replace(',', '.') : n[1].replace(',', '.');
+            const amount = parseFloat(raw);
+            if (!(amount > 0)) return { erro: 'O valor precisa ser maior que zero.' };
+            s = (s.slice(0, n.index) + ' ' + s.slice(n.index + n[0].length)).replace(/r\$/ig, ' ').replace(/\s+/g, ' ').trim();
+            if (!s) return { erro: 'Falta a descrição. Exemplo: uber 23,50' };
+            const description = s.charAt(0).toUpperCase() + s.slice(1);
+            const anterior = [...transactions].sort((a, b) => b.id - a.id).find(t => sa(t.description) === sa(description));
+            const type = plus ? 'Entrada' : (anterior ? anterior.type : (PALAVRAS_ENTRADA.test(sa(description)) ? 'Entrada' : 'Saída'));
+            return { date: isoDate(date), description, amount, type, category: inferirCategoria(description, type) };
+        }
+
+        function dataAmigavel(iso) { return iso === isoDate(new Date()) ? 'hoje' : formatDate(iso); }
+        function resumoQuick(r) { return `${r.type} de ${formatCurrency(r.amount)} em ${r.category}, ${dataAmigavel(r.date)}`; }
+
+        function previewQuick() {
+            const r = parseQuick(quickInput.value);
+            quickPreview.className = 'text-sm mt-2 min-h-[1.25rem] ' + (r && r.erro ? 'text-amber-700' : 'text-gray-600');
+            quickPreview.textContent = !r ? '' : (r.erro ? r.erro : `"${r.description}": ${resumoQuick(r)}`);
+        }
+
+        function submitQuick() {
+            const r = parseQuick(quickInput.value);
+            if (!r || r.erro) { showModal(r ? r.erro : 'Digite algo como: uber 23,50', null); return; }
+            transactions.push({ id: Date.now(), date: r.date, description: r.description, category: r.category, type: r.type, amount: r.amount });
+            selectedMonth = monthOf(r.date);
+            updateAll();
+            quickInput.value = '';
+            quickPreview.className = 'text-sm mt-2 min-h-[1.25rem] text-green-700';
+            quickPreview.textContent = `Lançado: "${r.description}", ${resumoQuick(r)}.`;
+            quickInput.focus();
+        }
+
+        function renderQuickChips() {
+            const box = document.getElementById('quick-chips');
+            box.innerHTML = '';
+            const usos = {};
+            [...transactions].sort((a, b) => b.id - a.id).slice(0, 200).forEach(t => {
+                const k = sa(t.description);
+                if (!usos[k]) usos[k] = { ultimo: t, n: 0 };
+                usos[k].n++;
+            });
+            Object.values(usos).sort((a, b) => b.n - a.n || b.ultimo.id - a.ultimo.id).slice(0, 6).forEach(({ ultimo: t }) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'text-sm bg-gray-100 hover:bg-indigo-100 text-gray-800 rounded-full px-3 py-1';
+                b.textContent = t.description;
+                b.title = 'Repetir o último valor (' + formatCurrency(t.amount) + ')';
+                b.addEventListener('click', () => {
+                    quickInput.value = `${t.description} ${t.amount.toFixed(2).replace('.', ',')}`;
+                    quickInput.focus();
+                    quickInput.setSelectionRange(t.description.length + 1, quickInput.value.length);
+                    previewQuick();
+                });
+                box.appendChild(b);
+            });
+        }
+
+        quickInput.addEventListener('input', previewQuick);
+        quickInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submitQuick(); } });
+        document.getElementById('quick-btn').addEventListener('click', submitQuick);
 
         // PARTE 7: INICIALIZAÇÃO E EVENT LISTENERS
         document.getElementById('date').valueAsDate = new Date();
