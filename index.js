@@ -1,5 +1,4 @@
 // PARTE 1: SELEÇÃO DE ELEMENTOS DO HTML (DOM)
-        const transactionForm = document.getElementById('transaction-form');
         const creditCardForm = document.getElementById('credit-card-form');
         const totalEntradasEl = document.getElementById('total-entradas');
         const totalSaidasEl = document.getElementById('total-saidas');
@@ -52,32 +51,6 @@
         let editingCreditCardId = null;
 
         // PARTE 3: FUNÇÕES DE DADOS (ADD, DELETE, FILTER, SAVE)
-        function addTransaction(e) {
-            e.preventDefault();
-            const date = document.getElementById('date').value;
-            const description = document.getElementById('description').value;
-            const category = document.getElementById('category').value;
-            const type = document.getElementById('type').value;
-            const amount = parseFloat(document.getElementById('amount').value);
-            if (!date || !description || isNaN(amount) || amount <= 0) {
-                showModal('Por favor, preencha todos os campos com valores válidos.', null);
-                return;
-            }
-
-            if (editingTransactionId) {
-                const index = transactions.findIndex(t => t.id === editingTransactionId);
-                transactions[index] = { id: editingTransactionId, date, description, category, type, amount };
-                editingTransactionId = null;
-            } else {
-                transactions.push({ id: Date.now(), date, description, category, type, amount });
-            }
-
-            selectedMonth = monthOf(date);
-            updateAll();
-            transactionForm.reset();
-            document.getElementById('date').valueAsDate = new Date();
-        }
-
         function addCreditCardPurchase(e) {
             e.preventDefault();
             const description = document.getElementById('cc-description').value;
@@ -282,21 +255,17 @@
 
         function editTransaction(id) {
             const t = transactions.find(item => item.id === id);
-            if (t) {
-                showModal('Deseja editar este lançamento?', () => {
-                    let dateValue = t.date;
-                    if (t.date.includes('/')) {
-                        const [day, month, year] = t.date.split('/');
-                        dateValue = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                    }
-                    document.getElementById("date").value = dateValue;
-                    document.getElementById("description").value = t.description;
-                    document.getElementById("category").value = t.category;
-                    document.getElementById("amount").value = t.amount;
-                    document.getElementById("type").value = t.type;
-                    editingTransactionId = id;
-                });
-            }
+            if (!t) return;
+            showModal('Deseja editar este lançamento?', () => {
+                const tag = Object.keys(TAGS_CATEGORIA).find(k => TAGS_CATEGORIA[k] === normalizarCategoria(t.category));
+                const [y, m, d] = t.date.includes('/') ? t.date.split('/').reverse() : t.date.split('-');
+                quickInput.value = `${t.type === 'Entrada' ? '+ ' : ''}${t.description} ${t.amount.toFixed(2).replace('.', ',')} ${Number(d)}/${Number(m)}/${y}${tag ? ' #' + tag : ''}`;
+                editingTransactionId = id;
+                previewQuick();
+                quickPreview.textContent = 'Editando: ' + quickPreview.textContent + ' (Enter salva, Esc cancela)';
+                quickInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                quickInput.focus();
+            });
         }
 
         function editCreditCardPurchase(id) {
@@ -511,6 +480,7 @@
             renderComparison();
             renderCharts();
             renderQuickChips();
+            document.getElementById('filter-hint').textContent = `Sem datas, o filtro vale só para ${monthLabel(selectedMonth)}. Com datas de início ou fim, vale para todo o período.`;
             renderBackupInfo();
         }
 
@@ -629,6 +599,7 @@
         ];
         const PALAVRAS_ENTRADA = /\b(salario|recebi|recebimento|freela|rendimento|reembolso|venda)\b/;
 
+        const TAGS_CATEGORIA = { salario: 'Salário', pix: 'Cartão de Débito/Pix', uber: 'Uber/99', fora: 'Gastos Fora de Casa', pessoais: 'Gastos Pessoais', moradia: 'Moradia', estivas: 'Estivas', outros: 'Outros' };
         function sa(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
         function isoDate(d) { return d.toLocaleDateString('sv-SE'); }
 
@@ -664,6 +635,14 @@
                 date.setDate(date.getDate() - { hoje: 0, ontem: 1, anteontem: 2 }[rel[1].toLowerCase()]);
                 s = s.replace(rel[0], ' ');
             }
+            let categoriaEscolhida = null;
+            const tagM = s.match(/\s#(\S+)/);
+            if (tagM) {
+                const chave = Object.keys(TAGS_CATEGORIA).find(k => k.startsWith(sa(tagM[1])) && sa(tagM[1]).length >= 2);
+                if (!chave) return { erro: `Categoria #${tagM[1]} não existe. Use: ${Object.keys(TAGS_CATEGORIA).map(k => '#' + k).join(' ')}` };
+                categoriaEscolhida = TAGS_CATEGORIA[chave];
+                s = s.replace(tagM[0], ' ');
+            }
             const nums = [...s.matchAll(/(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/g)];
             if (!nums.length) return { erro: 'Falta o valor. Exemplo: uber 23,50' };
             const n = nums[nums.length - 1];
@@ -675,7 +654,7 @@
             const description = s.charAt(0).toUpperCase() + s.slice(1);
             const anterior = [...transactions].sort((a, b) => b.id - a.id).find(t => sa(t.description) === sa(description));
             const type = plus ? 'Entrada' : (anterior ? anterior.type : (PALAVRAS_ENTRADA.test(sa(description)) ? 'Entrada' : 'Saída'));
-            return { date: isoDate(date), description, amount, type, category: inferirCategoria(description, type) };
+            return { date: isoDate(date), description, amount, type, category: categoriaEscolhida || inferirCategoria(description, type) };
         }
 
         function dataAmigavel(iso) { return iso === isoDate(new Date()) ? 'hoje' : formatDate(iso); }
@@ -690,12 +669,19 @@
         function submitQuick() {
             const r = parseQuick(quickInput.value);
             if (!r || r.erro) { showModal(r ? r.erro : 'Digite algo como: uber 23,50', null); return; }
-            transactions.push({ id: Date.now(), date: r.date, description: r.description, category: r.category, type: r.type, amount: r.amount });
+            const editando = editingTransactionId !== null;
+            if (editando) {
+                const i = transactions.findIndex(t => t.id === editingTransactionId);
+                transactions[i] = { id: editingTransactionId, date: r.date, description: r.description, category: r.category, type: r.type, amount: r.amount };
+                editingTransactionId = null;
+            } else {
+                transactions.push({ id: Date.now(), date: r.date, description: r.description, category: r.category, type: r.type, amount: r.amount });
+            }
             selectedMonth = monthOf(r.date);
             updateAll();
             quickInput.value = '';
             quickPreview.className = 'text-sm mt-2 min-h-[1.25rem] text-green-700';
-            quickPreview.textContent = `Lançado: "${r.description}", ${resumoQuick(r)}.`;
+            quickPreview.textContent = `${editando ? 'Atualizado' : 'Lançado'}: "${r.description}", ${resumoQuick(r)}.`;
             quickInput.focus();
         }
 
@@ -725,12 +711,13 @@
         }
 
         quickInput.addEventListener('input', previewQuick);
-        quickInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submitQuick(); } });
+        quickInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); submitQuick(); }
+            if (e.key === 'Escape' && editingTransactionId !== null) { editingTransactionId = null; quickInput.value = ''; quickPreview.textContent = 'Edição cancelada.'; }
+        });
         document.getElementById('quick-btn').addEventListener('click', submitQuick);
 
         // PARTE 7: INICIALIZAÇÃO E EVENT LISTENERS
-        document.getElementById('date').valueAsDate = new Date();
-        transactionForm.addEventListener('submit', addTransaction);
         creditCardForm.addEventListener('submit', addCreditCardPurchase);
 
         filterBtn.addEventListener('click', applyFilters);
