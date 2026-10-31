@@ -134,12 +134,12 @@ h3 {
 }
 
 .navegacao-mes input {
-    width: 9.5rem;
+    width: 10.5rem;
     border: 0;
     background: transparent;
     color: #fff;
     font: inherit;
-    font-weight: 700;
+    font-weight: 600;
     padding: .35rem .4rem;
     color-scheme: dark;
 }
@@ -988,7 +988,7 @@ td.acoes {
 }
 
 /* ============ Responsivo ============ */
-@media (min-width: 769px) {
+@media (min-width: 720px) {
 
     #container-tabela-lancamentos,
     #container-tabela-cartao {
@@ -1001,39 +1001,245 @@ td.acoes {
     }
 }
 
-@media (max-width: 768px) {
 
-    .painel-saldo,
-    .graficos {
-        grid-template-columns: 1fr;
+/* RESPONSIVIDADE MOBILE */
+
+@media (max-width: 640px) {
+
+    /* Evita elementos ultrapassando a tela */
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
     }
 
-    .grade-formulario {
+    html,
+    body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: clip;
+    }
+
+    .conteudo,
+    .conteudo > section,
+    .bloco,
+    .cartao-credito {
+        min-width: 0;
+        width: 100%;
+    }
+
+    /* Cabeçalho */
+    .barra-topo__interno {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: .7rem;
+        padding: .75rem 1rem;
+    }
+
+    .marca {
+        min-width: 0;
+        font-size: .88rem;
+    }
+
+    .navegacao-mes {
+        grid-column: 1 / -1;
+        order: initial;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .navegacao-mes input {
+        min-width: 0;
+        width: 100%;
+    }
+
+    /* Conteúdo principal */
+    .conteudo {
+        padding: 1rem .85rem 2rem;
+        gap: 1rem;
+    }
+
+    /* Painel de saldo */
+    .painel-saldo {
         grid-template-columns: 1fr;
+        gap: 1.2rem;
+        padding: 1.25rem;
+        border-radius: 16px;
+    }
+
+    .painel-saldo__valor {
+        font-size: clamp(1.8rem, 8vw, 2.6rem);
+        overflow-wrap: anywhere;
+    }
+
+    .painel-saldo__indicadores {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .6rem;
+    }
+
+    .indicador {
+        min-width: 0;
+        padding: .7rem;
+        gap: .5rem;
+    }
+
+    .indicador::before {
+        width: 28px;
+        height: 28px;
+    }
+
+    .indicador__valor {
+        font-size: .95rem;
+        overflow-wrap: anywhere;
+    }
+
+    /* Blocos */
+    .bloco {
+        padding: 1rem;
+        border-radius: 14px;
+    }
+
+    .bloco__subtitulo {
+        font-size: .85rem;
+        overflow-wrap: anywhere;
+    }
+
+    /* Lançamento rápido */
+    .linha-rapida {
+        flex-direction: column;
+        gap: .6rem;
+    }
+
+    .linha-rapida .campo,
+    .linha-rapida .botao {
+        width: 100%;
+        min-width: 0;
+    }
+
+    /* Gráficos */
+    .graficos {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1rem;
+    }
+
+    .caixa-grafico {
+        width: 100%;
+        height: 220px;
+        min-width: 0;
+    }
+
+    /* Filtros */
+    .grade-filtro {
+        grid-template-columns: minmax(0, 1fr);
+        gap: .8rem;
+    }
+
+    .acoes-filtro {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .acoes-filtro .botao {
+        width: 100%;
+        padding: 0 .5rem;
+    }
+
+    /* Formulário do cartão */
+    .grade-formulario {
+        grid-template-columns: minmax(0, 1fr);
+        gap: .8rem;
     }
 
     .ocupa-2 {
         grid-column: auto;
     }
 
-    .linha-rapida {
-        flex-direction: column;
+    .parcelas {
+        min-width: 0;
     }
 
-    .linha-rapida .botao {
+    .parcelas .campo {
+        min-width: 0;
+    }
+
+    /* Fatura */
+    .fatura {
+        max-width: 100%;
+        padding: 1.2rem;
+    }
+
+    .fatura p {
+        font-size: 1.6rem;
+        overflow-wrap: anywhere;
+    }
+
+    /* Carrosséis */
+    .slide-carrossel {
         width: 100%;
+        min-width: 100%;
+        padding: 1rem;
+    }
+
+    .slide-dado {
+        gap: .5rem;
+        align-items: flex-start;
+    }
+
+    .slide-valor {
+        overflow-wrap: anywhere;
+    }
+
+    .carrossel-navegacao {
+        gap: .5rem;
+    }
+
+    .carrossel-navegacao .botao {
+        padding: 0 .8rem;
+        font-size: .85rem;
+    }
+
+    /* Backup */
+    .linha {
+        align-items: stretch;
+    }
+
+    .linha .botao {
+        width: 100%;
+    }
+
+    /* Modal */
+    .janela__caixa {
+        width: 100%;
+        max-width: 400px;
+        padding: 1.25rem;
+    }
+
+    .janela__acoes {
+        flex-wrap: wrap;
     }
 }
 
-@media (max-width: 640px) {
-    .navegacao-mes {
-        order: 3;
-        width: 100%;
-        justify-content: space-between;
+/* Celulares muito estreitos */
+@media (max-width: 360px) {
+
+    .conteudo {
+        padding-left: .65rem;
+        padding-right: .65rem;
     }
 
-    .navegacao-mes input {
-        flex: 1;
-        text-align: center;
+    .painel-saldo__indicadores {
+        grid-template-columns: 1fr;
+    }
+
+    .marca {
+        font-size: .8rem;
+    }
+
+    .navegacao-mes {
+        gap: 0;
+    }
+
+    .navegacao-mes__hoje {
+        padding: .4rem;
     }
 }
