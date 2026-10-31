@@ -4,133 +4,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Controle Financeiro Web</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#0A1A33">
+    <title>Meu Controle Financeiro</title>
+    <script>try { var t = localStorage.getItem('finance-theme') || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'escuro' : 'claro'); document.documentElement.dataset.tema = t; } catch (e) { }</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 
-<body class="bg-gray-100 text-gray-800">
-
-    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Meu Controle Financeiro</h1>
-            <p class="text-gray-600 mt-2">Uma forma simples de acompanhar minhas entradas e saídas.</p>
-        </header>
-
-        <section id="month-selector" class="flex items-center justify-center gap-2 mb-6">
-            <button id="month-prev" type="button" aria-label="Mês anterior" class="bg-white border border-gray-300 rounded-md px-3 py-2 hover:bg-gray-50">&lsaquo;</button>
-            <input type="month" id="month-picker" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-            <button id="month-next" type="button" aria-label="Próximo mês" class="bg-white border border-gray-300 rounded-md px-3 py-2 hover:bg-gray-50">&rsaquo;</button>
-            <button id="month-today" type="button" class="ml-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">Mês atual</button>
-        </section>
-
-        <section id="summary" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div class="summary-card bg-green-100 border border-green-200 p-6 rounded-lg shadow">
-                <h3 class="font-bold text-green-800">Total de Entradas</h3>
-                <p id="total-entradas" class="text-2xl font-semibold text-green-900 mt-2">R$ 0,00</p>
+<body>
+    <header class="barra-topo">
+        <div class="barra-topo__interno">
+            <a class="marca" href="#"><span class="marca__simbolo" aria-hidden="true"></span>Meu Controle Financeiro</a>
+            <div class="navegacao-mes" id="seletor-mes">
+                <button id="mes-anterior" type="button" class="botao-icone" aria-label="Mês anterior">&lsaquo;</button>
+                <input type="month" id="campo-mes" aria-label="Mês">
+                <button id="mes-seguinte" type="button" class="botao-icone" aria-label="Próximo mês">&rsaquo;</button>
+                <button id="mes-atual" type="button" class="navegacao-mes__hoje">Hoje</button>
             </div>
-            <div class="summary-card bg-red-100 border border-red-200 p-6 rounded-lg shadow">
-                <h3 class="font-bold text-red-800">Total de Saídas</h3>
-                <p id="total-saidas" class="text-2xl font-semibold text-red-900 mt-2">R$ 0,00</p>
-            </div>
-            <div class="summary-card bg-blue-100 border border-blue-200 p-6 rounded-lg shadow">
-                <h3 class="font-bold text-blue-800">Saldo Final</h3>
-                <p id="saldo-final" class="text-2xl font-semibold text-blue-900 mt-2">R$ 0,00</p>
-                <p id="saldo-acumulado" class="text-xs text-gray-600 mt-1"></p>
-            </div>
-        </section>
+            <button id="alternar-tema" type="button" class="botao-icone" aria-label="Alternar tema claro e escuro">&#9680;</button>
+        </div>
+    </header>
 
-        <section id="quick-add" class="mb-8 bg-white p-6 rounded-lg shadow">
-            <h2 class="text-2xl font-bold mb-1">Lançamento rápido</h2>
-            <p class="text-sm text-gray-600 mb-4">Escreva como falaria: <strong>uber 23,50</strong>, <strong>mercado 120 ontem</strong>, <strong>salário 3000</strong> ou <strong>luz 98,40 15/10</strong>. O tipo, a categoria e a data são preenchidos sozinhos.</p>
-            <div class="flex flex-col md:flex-row gap-3">
-                <input type="text" id="quick-input" autocomplete="off" placeholder="Ex: pix almoço 32,90"
-                    class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                <button id="quick-btn" type="button" class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-md hover:bg-indigo-700">Lançar</button>
+    <main class="conteudo">
+        <section id="resumo" class="painel-saldo" data-estado="zero">
+            <div>
+                <p class="painel-saldo__rotulo">Saldo do mês</p>
+                <p id="saldo-final" class="painel-saldo__valor">R$ 0,00</p>
+                <p id="saldo-acumulado" class="painel-saldo__acumulado"></p>
             </div>
-            <p id="quick-preview" class="text-sm text-gray-600 mt-2 min-h-[1.25rem]"></p>
-            <div id="quick-chips" class="flex flex-wrap gap-2 mt-3"></div>
-        </section>
-
-        <section id="charts-section" class="mb-8">
-            <p id="month-compare" class="text-center text-sm text-gray-600 mb-4"></p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <h3 class="font-bold mb-2">Saídas por categoria</h3>
-                    <p id="chart-categorias-vazio" class="hidden text-sm text-gray-500 py-8 text-center">Nenhuma saída neste mês.</p>
-                    <div class="relative h-64"><canvas id="chart-categorias"></canvas></div>
+            <div class="painel-saldo__indicadores">
+                <div class="indicador indicador--entrada">
+                    <div><span class="indicador__rotulo">Entradas</span><p id="total-entradas" class="indicador__valor">R$ 0,00</p></div>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <h3 class="font-bold mb-2">Últimos 6 meses</h3>
-                    <div class="relative h-64"><canvas id="chart-meses"></canvas></div>
+                <div class="indicador indicador--saida">
+                    <div><span class="indicador__rotulo">Saídas</span><p id="total-saidas" class="indicador__valor">R$ 0,00</p></div>
                 </div>
             </div>
         </section>
 
-        <section id="transaction-list">
-            <h2 class="text-2xl font-bold mb-4">Meus Lançamentos</h2>
-            <div id="transaction-table-container">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Data</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Descrição</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Categoria</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Valor</th>
-                            <th
-                                class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="transaction-table-body" class="bg-white divide-y divide-gray-200"></tbody>
-                </table>
+        <section id="lancamento-rapido" class="bloco">
+            <h2>Lançamento rápido</h2>
+            <p class="bloco__subtitulo">Escreva como falaria: <strong>uber 23,50</strong>, <strong>mercado 120 ontem</strong>, <strong>salário 3000</strong> ou <strong>luz 98,40 15/10</strong>. O tipo, a categoria e a data são preenchidos sozinhos. Para escolher a categoria, acrescente uma etiqueta: <strong>mercado 120 #moradia</strong>.</p>
+            <div class="linha-rapida">
+                <input type="text" id="campo-rapido" class="campo" autocomplete="off" placeholder="Ex: pix almoço 32,90">
+                <button id="botao-rapido" type="button" class="botao botao--primario">Lançar</button>
             </div>
+            <p id="previa-rapida" class="previa-rapida"></p>
+            <div id="atalhos-rapidos" class="atalhos"></div>
+        </section>
 
-            <div id="transaction-carousel-container">
-                <div class="bg-white rounded-lg shadow overflow-hidden relative">
-                    <div id="transaction-slider" class="flex transition-transform duration-300 ease-in-out">
-                    </div>
+        <section id="secao-graficos">
+            <p id="comparacao-mes" class="comparacao"></p>
+            <div class="graficos">
+                <div class="bloco">
+                    <h3>Saídas por categoria</h3>
+                    <p id="grafico-categorias-vazio" class="vazio oculto">Nenhuma saída neste mês.</p>
+                    <div class="caixa-grafico"><canvas id="grafico-categorias"></canvas></div>
                 </div>
-                <div class="flex justify-between items-center mt-4">
-                    <button id="prev-btn"
-                        class="bg-indigo-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-600 disabled:bg-gray-300">Anterior</button>
-                    <span id="slide-counter" class="text-sm text-gray-600 font-medium"></span>
-                    <button id="next-btn"
-                        class="bg-indigo-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-600 disabled:bg-gray-300">Próximo</button>
+                <div class="bloco">
+                    <h3>Últimos 6 meses</h3>
+                    <div class="caixa-grafico"><canvas id="grafico-meses"></canvas></div>
                 </div>
             </div>
         </section>
 
-        <section id="filter-section" class="mt-6 mb-8 bg-white p-6">
-            <h3 class="text-xl font-bold mb-4">Filtrar Lançamentos</h3>
-            <div id="filtered-summary"
-                class="hidden bg-blue-50 border border-blue-200 p-4 rounded-lg shadow-sm mb-6 text-center">
-                <h3 class="font-bold text-blue-800">Valor Total do Período Filtrado</h3>
-                <p id="filtered-summary-total" class="text-2xl font-semibold text-blue-900 mt-2">R$ 0,00</p>
+        <section id="secao-filtro" class="bloco">
+            <h2>Filtrar lançamentos</h2>
+            <p id="dica-filtro" class="bloco__subtitulo"></p>
+            <div id="resumo-filtrado" class="resumo-filtrado oculto">
+                <span>Total do período filtrado</span>
+                <p id="total-resumo-filtrado">R$ 0,00</p>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                <div class="md:col-span-1">
-                    <label for="filter-start-date" class="block text-sm font-medium text-gray-700">De</label>
-                    <input type="date" id="filter-start-date"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-
-                <div class="md:col-span-1">
-                    <label for="filter-end-date" class="block text-sm font-medium text-gray-700">Até</label>
-                    <input type="date" id="filter-end-date"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-
-                <div class="md:col-span-1">
-                    <label for="filter-category" class="block text-sm font-medium text-gray-700">Categoria</label>
-                    <select id="filter-category"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <div class="grade-filtro">
+                <div class="grupo-campo"><label for="filtro-data-inicio">De</label><input type="date" id="filtro-data-inicio" class="campo"></div>
+                <div class="grupo-campo"><label for="filtro-data-fim">Até</label><input type="date" id="filtro-data-fim" class="campo"></div>
+                <div class="grupo-campo"><label for="filtro-categoria">Categoria</label>
+                    <select id="filtro-categoria" class="campo">
                         <option value="">Todas</option>
                         <option>Salário</option>
                         <option>Cartão de Débito/Pix</option>
@@ -142,135 +94,100 @@
                         <option>Outros</option>
                     </select>
                 </div>
-
-                <div class="md:col-span-1">
-                    <label for="filter-type" class="block text-sm font-medium text-gray-700">Tipo</label>
-                    <select id="filter-type"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                <div class="grupo-campo"><label for="filtro-tipo">Tipo</label>
+                    <select id="filtro-tipo" class="campo">
                         <option value="">Todos</option>
                         <option value="Entrada">Entrada</option>
                         <option value="Saída">Saída</option>
                     </select>
                 </div>
-
-                <div class="md:col-span-1 flex gap-2">
-                    <button id="filter-btn"
-                        class="w-full bg-indigo-600 text-white font-semibold py-1 px-2 rounded-md hover:bg-indigo-700">Filtrar</button>
-                    <button id="clear-filter-btn"
-                        class="w-full bg-gray-500 text-white font-semibold py-2 px-2 rounded-md hover:bg-gray-600">Limpar</button>
+                <div class="acoes-filtro">
+                    <button id="botao-filtrar" type="button" class="botao botao--primario">Filtrar</button>
+                    <button id="botao-limpar-filtro" type="button" class="botao botao--secundario">Limpar</button>
                 </div>
             </div>
         </section>
 
-        <section id="credit-card-section" class="mt-12 pt-8 border-t-2 border-gray-200">
-            <div class="mb-8 bg-white p-6 rounded-lg shadow">
-                <header class="text-center mb-8">
-                    <h2 class="text-3xl font-bold text-gray-900">Controle do Cartão de Crédito</h2>
-                    <p class="text-gray-600 mt-2">Cadastro de minhas compras para acompanhar a fatura.</p>
-                </header>
-                <h3 class="text-2xl font-bold mb-4">Adicionar Compra no Cartão</h3>
-                <form id="credit-card-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    <div class="md:col-span-2">
-                        <label for="cc-description" class="block text-sm font-medium text-gray-700">Descrição da
-                            Compra</label>
-                        <input type="text" id="cc-description" placeholder="Ex: Jantar no restaurante"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            required>
-                    </div>
-                    <div class="md:col-span-1">
-                        <label for="cc-amount" class="block text-sm font-medium text-gray-700">Valor (R$)</label>
-                        <input type="number" id="cc-amount" step="0.01" placeholder="80.00"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            required>
-                    </div>
-                    <div class="md:col-span-1">
-                        <label class="block text-sm font-medium text-gray-700">Parcelas (Opcional)</label>
-                        <div class="flex items-center mt-1 gap-2">
-                            <input type="number" id="cc-installment-current" min="1" placeholder="Atual"
-                                class="w-1/2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            <span class="text-gray-500">de</span>
-                            <input type="number" id="cc-installment-total" min="1" placeholder="Total"
-                                class="w-1/2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        <section id="lista-lancamentos">
+            <div class="cabecalho-secao"><h2>Meus lançamentos</h2></div>
+            <div id="container-tabela-lancamentos" class="bloco bloco-tabela">
+                <table>
+                    <thead>
+                        <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th class="numero">Valor</th><th class="centro">Ação</th></tr>
+                    </thead>
+                    <tbody id="corpo-tabela-lancamentos"></tbody>
+                </table>
+            </div>
+            <div id="container-carrossel-lancamentos">
+                <div class="bloco carrossel"><div id="faixa-lancamentos" class="faixa"></div></div>
+                <div class="carrossel-navegacao">
+                    <button id="botao-anterior" type="button" class="botao botao--primario">Anterior</button>
+                    <span id="contador-slides" class="contador"></span>
+                    <button id="botao-proximo" type="button" class="botao botao--primario">Próximo</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="secao-cartao" class="cartao-credito">
+            <div class="bloco">
+                <h2>Cartão de crédito</h2>
+                <p class="bloco__subtitulo">Cadastre suas compras para acompanhar a fatura.</p>
+                <form id="formulario-cartao" class="grade-formulario">
+                    <div class="grupo-campo ocupa-2"><label for="cartao-descricao">Descrição da compra</label><input type="text" id="cartao-descricao" class="campo" placeholder="Ex: Jantar no restaurante" required></div>
+                    <div class="grupo-campo"><label for="cartao-valor">Valor (R$)</label><input type="number" id="cartao-valor" class="campo" step="0.01" placeholder="80.00" required></div>
+                    <div class="grupo-campo"><span class="grupo-campo__rotulo">Parcelas (opcional)</span>
+                        <div class="parcelas">
+                            <input type="number" id="cartao-parcela-atual" class="campo" min="1" placeholder="Atual" aria-label="Parcela atual">
+                            <span>de</span>
+                            <input type="number" id="cartao-parcela-total" class="campo" min="1" placeholder="Total" aria-label="Total de parcelas">
                         </div>
                     </div>
-                    <div class="md:col-span-4">
-                        <button type="submit"
-                            class="w-full mt-4 bg-orange-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">Adicionar
-                            Compra</button>
-                    </div>
+                    <div class="ocupa-tudo"><button type="submit" class="botao botao--dourado botao--total">Adicionar compra</button></div>
                 </form>
             </div>
 
-            <div
-                class="summary-card bg-orange-100 border border-orange-200 p-4 rounded-lg shadow mb-8 max-w-sm mx-auto">
-                <h3 class="font-bold text-orange-800 text-center">Total da Fatura Atual</h3>
-                <p id="total-fatura" class="text-2xl font-semibold text-orange-900 mt-2 text-center">R$ 0,00</p>
+            <div class="fatura">
+                <h3>Total da fatura atual</h3>
+                <p id="total-fatura">R$ 0,00</p>
             </div>
 
-            <div id="credit-card-table-container" class="mb-8 bg-white p-6 rounded-lg shadow overflow-hidden">
-                <h2 class="text-2xl font-bold mb-5">Compras na Fatura</h2>
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Descrição</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Valor</th>
-                            <th
-                                class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Parcelas</th>
-                            <th
-                                class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Ação</th>
-                        </tr>
+            <div class="cabecalho-secao"><h2>Compras na fatura</h2></div>
+            <div id="container-tabela-cartao" class="bloco bloco-tabela">
+                <table>
+                    <thead>
+                        <tr><th>Descrição</th><th class="numero">Valor</th><th class="centro">Parcelas</th><th class="centro">Ação</th></tr>
                     </thead>
-                    <tbody id="credit-card-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+                    <tbody id="corpo-tabela-cartao"></tbody>
                 </table>
             </div>
-
-            <div id="credit-card-carousel-container">
-                <div class="bg-white rounded-lg shadow overflow-hidden relative">
-                    <div id="credit-card-slider" class="flex transition-transform duration-300 ease-in-out">
-                    </div>
-                </div>
-                <div class="flex justify-between items-center mt-4">
-                    <button id="cc-prev-btn"
-                        class="bg-orange-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-orange-600 disabled:bg-gray-300">Anterior</button>
-                    <span id="cc-slide-counter" class="text-sm text-gray-600 font-medium"></span>
-                    <button id="cc-next-btn"
-                        class="bg-orange-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-orange-600 disabled:bg-gray-300">Próximo</button>
+            <div id="container-carrossel-cartao">
+                <div class="bloco carrossel"><div id="faixa-cartao" class="faixa"></div></div>
+                <div class="carrossel-navegacao">
+                    <button id="botao-cartao-anterior" type="button" class="botao botao--dourado">Anterior</button>
+                    <span id="contador-slides-cartao" class="contador"></span>
+                    <button id="botao-cartao-proximo" type="button" class="botao botao--dourado">Próximo</button>
                 </div>
             </div>
         </section>
 
-        <section id="backup-section" class="mt-12 bg-white p-6 rounded-lg shadow">
-            <h2 class="text-2xl font-bold mb-2">Backup dos dados</h2>
-            <p class="text-sm text-gray-600 mb-4">Seus dados ficam salvos só neste navegador. Exporte um arquivo para guardar uma cópia ou levar para outro aparelho.</p>
-            <div class="flex flex-wrap items-center gap-3">
-                <button id="export-btn" type="button" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Exportar backup</button>
-                <button id="import-btn" type="button" class="bg-gray-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-gray-600">Importar backup</button>
-                <input type="file" id="import-file" accept="application/json,.json" class="hidden">
+        <section id="secao-backup" class="bloco">
+            <h2>Backup dos dados</h2>
+            <p class="bloco__subtitulo">Seus dados ficam salvos só neste navegador. Exporte um arquivo para guardar uma cópia ou levar para outro aparelho.</p>
+            <div class="linha">
+                <button id="botao-exportar" type="button" class="botao botao--primario">Exportar backup</button>
+                <button id="botao-importar" type="button" class="botao botao--secundario">Importar backup</button>
+                <input type="file" id="arquivo-importacao" accept="application/json,.json" class="oculto">
             </div>
-            <p id="backup-info" class="mt-3 text-sm"></p>
+            <p id="info-backup" class="info-backup"></p>
         </section>
-    </div>
-    <div id="custom-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
-                    <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
-                        </path>
-                    </svg>
-                </div>
-                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">Atenção!</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500" id="modal-message">Mensagem aqui.</p>
-                </div>
-                <div class="items-center px-4 py-3" id="modal-buttons"></div>
-            </div>
+    </main>
+
+    <div id="janela-modal" class="janela oculto" role="dialog" aria-modal="true">
+        <div class="janela__caixa">
+            <div class="janela__icone" aria-hidden="true">!</div>
+            <h3>Atenção</h3>
+            <p id="mensagem-modal">Mensagem aqui.</p>
+            <div id="botoes-modal" class="janela__acoes"></div>
         </div>
     </div>
 
