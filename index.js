@@ -1,47 +1,47 @@
 // PARTE 1: SELEÇÃO DE ELEMENTOS DO HTML (DOM)
-        const creditCardForm = document.getElementById('credit-card-form');
+        const creditCardForm = document.getElementById('formulario-cartao');
         const totalEntradasEl = document.getElementById('total-entradas');
         const totalSaidasEl = document.getElementById('total-saidas');
         const saldoFinalEl = document.getElementById('saldo-final');
         const saldoFinalCard = saldoFinalEl.parentElement;
         const totalFaturaEl = document.getElementById('total-fatura');
-        const modal = document.getElementById('custom-modal');
-        const modalMessage = document.getElementById('modal-message');
-        const modalButtons = document.getElementById('modal-buttons');
+        const modal = document.getElementById('janela-modal');
+        const modalMessage = document.getElementById('mensagem-modal');
+        const modalButtons = document.getElementById('botoes-modal');
 
         // Elementos dos Lançamentos Principais
-        const transactionTableContainer = document.getElementById('transaction-table-container');
-        const transactionTableBody = document.getElementById('transaction-table-body');
-        const carouselContainer = document.getElementById('transaction-carousel-container');
-        const slider = document.getElementById('transaction-slider');
-        const prevBtn = document.getElementById('prev-btn');
-        const nextBtn = document.getElementById('next-btn');
-        const slideCounter = document.getElementById('slide-counter');
+        const transactionTableContainer = document.getElementById('container-tabela-lancamentos');
+        const transactionTableBody = document.getElementById('corpo-tabela-lancamentos');
+        const carouselContainer = document.getElementById('container-carrossel-lancamentos');
+        const slider = document.getElementById('faixa-lancamentos');
+        const prevBtn = document.getElementById('botao-anterior');
+        const nextBtn = document.getElementById('botao-proximo');
+        const slideCounter = document.getElementById('contador-slides');
 
         // Elementos do Cartão de Crédito
-        const creditCardTableContainer = document.getElementById('credit-card-table-container');
-        const creditCardTableBody = document.getElementById('credit-card-table-body');
-        const ccCarouselContainer = document.getElementById('credit-card-carousel-container');
-        const ccSlider = document.getElementById('credit-card-slider');
-        const ccPrevBtn = document.getElementById('cc-prev-btn');
-        const ccNextBtn = document.getElementById('cc-next-btn');
-        const ccSlideCounter = document.getElementById('cc-slide-counter');
+        const creditCardTableContainer = document.getElementById('container-tabela-cartao');
+        const creditCardTableBody = document.getElementById('corpo-tabela-cartao');
+        const ccCarouselContainer = document.getElementById('container-carrossel-cartao');
+        const ccSlider = document.getElementById('faixa-cartao');
+        const ccPrevBtn = document.getElementById('botao-cartao-anterior');
+        const ccNextBtn = document.getElementById('botao-cartao-proximo');
+        const ccSlideCounter = document.getElementById('contador-slides-cartao');
 
         // Elementos dos Filtros
-        const filterStartDate = document.getElementById('filter-start-date');
-        const filterEndDate = document.getElementById('filter-end-date');
-        const filterCategory = document.getElementById('filter-category');
-        const filterType = document.getElementById('filter-type');
-        const filterBtn = document.getElementById('filter-btn');
-        const filteredSummaryEl = document.getElementById('filtered-summary');
-        const filteredSummaryTotalEl = document.getElementById('filtered-summary-total');
-        const clearFilterBtn = document.getElementById('clear-filter-btn');
+        const filterStartDate = document.getElementById('filtro-data-inicio');
+        const filterEndDate = document.getElementById('filtro-data-fim');
+        const filterCategory = document.getElementById('filtro-categoria');
+        const filterType = document.getElementById('filtro-tipo');
+        const filterBtn = document.getElementById('botao-filtrar');
+        const filteredSummaryEl = document.getElementById('resumo-filtrado');
+        const filteredSummaryTotalEl = document.getElementById('total-resumo-filtrado');
+        const clearFilterBtn = document.getElementById('botao-limpar-filtro');
 
         // PARTE 2: ESTADO DA APLICAÇÃO (VARIÁVEIS GLOBAIS)
         let transactions = JSON.parse(localStorage.getItem('finance-transactions')) || [];
         let creditCardPurchases = JSON.parse(localStorage.getItem('finance-cc-purchases')) || [];
 
-        //Variável de estado para a lista de transações atualmente em exibição.
+        // ALTERAÇÃO: Variável de estado para a lista de transações atualmente em exibição.
         let currentlyDisplayedTransactions = [];
 
         let onConfirmCallback = null;
@@ -53,10 +53,10 @@
         // PARTE 3: FUNÇÕES DE DADOS (ADD, DELETE, FILTER, SAVE)
         function addCreditCardPurchase(e) {
             e.preventDefault();
-            const description = document.getElementById('cc-description').value;
-            const amount = parseFloat(document.getElementById('cc-amount').value);
-            const installmentCurrent = document.getElementById('cc-installment-current').value;
-            const installmentTotal = document.getElementById('cc-installment-total').value;
+            const description = document.getElementById('cartao-descricao').value;
+            const amount = parseFloat(document.getElementById('cartao-valor').value);
+            const installmentCurrent = document.getElementById('cartao-parcela-atual').value;
+            const installmentTotal = document.getElementById('cartao-parcela-total').value;
 
             if (!description || isNaN(amount) || amount <= 0) {
                 showModal('Por favor, preencha a descrição e o valor com dados válidos.', null);
@@ -109,7 +109,7 @@
             });
         }
 
-        //Funções de filtro agora gerenciam a lista 'currentlyDisplayedTransactions'
+        // ALTERAÇÃO 2: Funções de filtro agora gerenciam a lista 'currentlyDisplayedTransactions'
         function applyFilters() {
             const startDateString = filterStartDate.value;
             const endDateString = filterEndDate.value;
@@ -171,7 +171,7 @@
             });
 
             let valorExibido;
-            const tipoFiltrado = document.getElementById('filter-type').value;
+            const tipoFiltrado = document.getElementById('filtro-tipo').value;
 
             if (tipoFiltrado === 'Saída') {
                 valorExibido = totalSaidas;
@@ -184,12 +184,13 @@
             filteredSummaryTotalEl.textContent = `R$ ${valorExibido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
             const anyFilterApplied = filterStartDate.value || filterEndDate.value || filterCategory.value || filterType.value;
             if (anyFilterApplied && filteredTransactions.length > 0) {
-                filteredSummaryEl.classList.remove('hidden');
+                filteredSummaryEl.classList.remove('oculto');
             } else {
-                filteredSummaryEl.classList.add('hidden');
+                filteredSummaryEl.classList.add('oculto');
             }
         }
 
+        // A função updateDisplay que sugeri antes não é mais necessária, pois a lógica está em 'renderTransactionViews' e 'updateNavButtons'
 
         function saveTransactionsToStorage() {
             localStorage.setItem('finance-transactions', JSON.stringify(transactions));
@@ -205,8 +206,8 @@
             slider.innerHTML = '';
 
             if (transactionsToRender.length === 0) {
-                transactionTableBody.innerHTML = `<tr><td colspan="5" class="empty">Nenhum lançamento encontrado.</td></tr>`;
-                slider.innerHTML = `<div class="carousel-slide empty">Nenhum lançamento encontrado.</div>`;
+                transactionTableBody.innerHTML = `<tr><td colspan="5" class="vazio">Nenhum lançamento encontrado.</td></tr>`;
+                slider.innerHTML = `<div class="slide-carrossel vazio">Nenhum lançamento encontrado.</div>`;
                 updateNavButtons(transactionsToRender);
                 return;
             }
@@ -227,25 +228,25 @@
 
                 const tableRow = document.createElement('tr');
                 tableRow.innerHTML = `
-                <td class="muted">${formatDate(t.date)}</td>
-                <td class="strong">${esc(t.description)}</td>
-                <td><span class="badge">${categoriaNormalizada}</span></td>
-                <td class="num ${corValor}">${sinal} R$ ${valorFormatado}</td>
-                <td class="actions">
-                    <button onclick="deleteTransaction(${t.id})" class="link-btn link-btn--danger">Excluir</button>
-                    <button onclick="editTransaction(${t.id})" class="link-btn">Editar</button>
+                <td class="texto-suave">${formatDate(t.date)}</td>
+                <td class="destaque">${esc(t.description)}</td>
+                <td><span class="etiqueta">${categoriaNormalizada}</span></td>
+                <td class="numero ${corValor}">${sinal} R$ ${valorFormatado}</td>
+                <td class="acoes">
+                    <button onclick="deleteTransaction(${t.id})" class="botao-link botao-link--perigo">Excluir</button>
+                    <button onclick="editTransaction(${t.id})" class="botao-link">Editar</button>
                 </td>`;
                 transactionTableBody.appendChild(tableRow);
 
                 const slideDiv = document.createElement('div');
-                slideDiv.className = 'carousel-slide';
+                slideDiv.className = 'slide-carrossel';
                 slideDiv.innerHTML = `
-                <div class="slide-data-point"><span class="slide-label">Data:</span><span class="slide-value">${formatDate(t.date)}</span></div>
-                <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="slide-value strong">${esc(t.description)}</span></div>
-                <div class="slide-data-point"><span class="slide-label">Categoria:</span><span class="slide-value">${categoriaNormalizada}</span></div>
-                <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="slide-value ${corValor}">${sinal} R$ ${valorFormatado}</span></div>
-                <div class="slide-actions"><button onclick="deleteTransaction(${t.id})" class="link-btn link-btn--danger">Excluir Lançamento</button></div>
-                <div class="slide-actions"><button onclick="editTransaction(${t.id})" class="link-btn">Editar Lançamento</button></div>`;
+                <div class="slide-dado"><span class="slide-rotulo">Data:</span><span class="slide-valor">${formatDate(t.date)}</span></div>
+                <div class="slide-dado"><span class="slide-rotulo">Descrição:</span><span class="slide-valor destaque">${esc(t.description)}</span></div>
+                <div class="slide-dado"><span class="slide-rotulo">Categoria:</span><span class="slide-valor">${categoriaNormalizada}</span></div>
+                <div class="slide-dado"><span class="slide-rotulo">Valor:</span><span class="slide-valor ${corValor}">${sinal} R$ ${valorFormatado}</span></div>
+                <div class="slide-acoes"><button onclick="deleteTransaction(${t.id})" class="botao-link botao-link--perigo">Excluir Lançamento</button></div>
+                <div class="slide-acoes"><button onclick="editTransaction(${t.id})" class="botao-link">Editar Lançamento</button></div>`;
                 slider.appendChild(slideDiv);
             });
 
@@ -271,10 +272,10 @@
             const purchase = creditCardPurchases.find(p => p.id === id);
             if (purchase) {
                 showModal('Deseja editar esta compra do cartão?', () => {
-                    document.getElementById('cc-description').value = purchase.description;
-                    document.getElementById('cc-amount').value = purchase.amount;
-                    document.getElementById('cc-installment-current').value = purchase.installmentCurrent || '';
-                    document.getElementById('cc-installment-total').value = purchase.installmentTotal || '';
+                    document.getElementById('cartao-descricao').value = purchase.description;
+                    document.getElementById('cartao-valor').value = purchase.amount;
+                    document.getElementById('cartao-parcela-atual').value = purchase.installmentCurrent || '';
+                    document.getElementById('cartao-parcela-total').value = purchase.installmentTotal || '';
                     editingCreditCardId = id;
                 });
             }
@@ -284,8 +285,8 @@
             creditCardTableBody.innerHTML = '';
             ccSlider.innerHTML = '';
             if (creditCardPurchases.length === 0) {
-                creditCardTableBody.innerHTML = `<tr><td colspan="4" class="empty">Nenhuma compra no cartão adicionada ainda.</td></tr>`;
-                ccSlider.innerHTML = `<div class="carousel-slide empty">Nenhuma compra no cartão.</div>`;
+                creditCardTableBody.innerHTML = `<tr><td colspan="4" class="vazio">Nenhuma compra no cartão adicionada ainda.</td></tr>`;
+                ccSlider.innerHTML = `<div class="slide-carrossel vazio">Nenhuma compra no cartão.</div>`;
                 updateCreditCardNavButtons();
                 return;
             }
@@ -296,22 +297,22 @@
                 if (p.installmentCurrent && p.installmentTotal) installmentText = `${p.installmentCurrent} / ${p.installmentTotal}`;
                 const tableRow = document.createElement('tr');
                 tableRow.innerHTML = `
-                <td class="strong">${esc(p.description)}</td>
-                <td class="num valor-saida">${formatCurrency(p.amount)}</td>
-                <td class="muted center">${installmentText}</td>
-                <td class="actions">
-                    <button onclick="deleteCreditCardPurchase(${p.id})" class="link-btn link-btn--danger">Excluir</button>
-                    <button onclick="editCreditCardPurchase(${p.id})" class="link-btn">Editar</button>
+                <td class="destaque">${esc(p.description)}</td>
+                <td class="numero valor-saida">${formatCurrency(p.amount)}</td>
+                <td class="texto-suave centro">${installmentText}</td>
+                <td class="acoes">
+                    <button onclick="deleteCreditCardPurchase(${p.id})" class="botao-link botao-link--perigo">Excluir</button>
+                    <button onclick="editCreditCardPurchase(${p.id})" class="botao-link">Editar</button>
                 </td>`;
                 creditCardTableBody.appendChild(tableRow);
                 const slideDiv = document.createElement('div');
-                slideDiv.className = 'carousel-slide';
+                slideDiv.className = 'slide-carrossel';
                 slideDiv.innerHTML = `
-                <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="slide-value strong">${esc(p.description)}</span></div>
-                <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="slide-value valor-saida">${formatCurrency(p.amount)}</span></div>
-                <div class="slide-data-point"><span class="slide-label">Parcelas:</span><span class="slide-value">${installmentText}</span></div>
-                <div class="slide-actions"><button onclick="deleteCreditCardPurchase(${p.id})" class="link-btn link-btn--danger">Excluir Lançamento</button></div>
-                <div class="slide-actions"><button onclick="editCreditCardPurchase(${p.id})" class="link-btn">Editar Lançamento</button></div>`;
+                <div class="slide-dado"><span class="slide-rotulo">Descrição:</span><span class="slide-valor destaque">${esc(p.description)}</span></div>
+                <div class="slide-dado"><span class="slide-rotulo">Valor:</span><span class="slide-valor valor-saida">${formatCurrency(p.amount)}</span></div>
+                <div class="slide-dado"><span class="slide-rotulo">Parcelas:</span><span class="slide-valor">${installmentText}</span></div>
+                <div class="slide-acoes"><button onclick="deleteCreditCardPurchase(${p.id})" class="botao-link botao-link--perigo">Excluir Lançamento</button></div>
+                <div class="slide-acoes"><button onclick="editCreditCardPurchase(${p.id})" class="botao-link">Editar Lançamento</button></div>`;
                 ccSlider.appendChild(slideDiv);
             });
             showCreditCardSlide(0);
@@ -326,7 +327,7 @@
             animarValor(totalSaidasEl, saidas);
             animarValor(saldoFinalEl, saldo);
             document.getElementById('saldo-acumulado').textContent = 'Acumulado total: ' + formatCurrency(sumBy(transactions, 'Entrada') - sumBy(transactions, 'Saída'));
-            document.getElementById('summary').dataset.estado = saldo > 0 ? 'positivo' : (saldo < 0 ? 'negativo' : 'zero');
+            document.getElementById('resumo').dataset.estado = saldo > 0 ? 'positivo' : (saldo < 0 ? 'negativo' : 'zero');
         }
 
         function updateCreditCardSummary() {
@@ -340,20 +341,20 @@
             modalButtons.innerHTML = '';
             if (callback) {
                 modalButtons.innerHTML = `
-                <button id="modal-confirm-btn" class="btn btn--danger">Sim</button>
-                <button id="modal-cancel-btn" class="btn btn--ghost">Não</button>
+                <button id="botao-modal-confirmar" class="botao botao--perigo">Sim</button>
+                <button id="botao-modal-cancelar" class="botao botao--secundario">Não</button>
             `;
-                document.getElementById('modal-confirm-btn').onclick = () => { if (onConfirmCallback) onConfirmCallback(); hideModal(); };
-                document.getElementById('modal-cancel-btn').onclick = hideModal;
+                document.getElementById('botao-modal-confirmar').onclick = () => { if (onConfirmCallback) onConfirmCallback(); hideModal(); };
+                document.getElementById('botao-modal-cancelar').onclick = hideModal;
             } else {
-                modalButtons.innerHTML = `<button id="modal-ok-btn" class="btn btn--primary btn--block">OK</button>`;
-                document.getElementById('modal-ok-btn').onclick = hideModal;
+                modalButtons.innerHTML = `<button id="botao-modal-ok" class="botao botao--primario botao--total">OK</button>`;
+                document.getElementById('botao-modal-ok').onclick = hideModal;
             }
-            modal.classList.remove('hidden');
+            modal.classList.remove('oculto');
         }
 
         function hideModal() {
-            modal.classList.add('hidden');
+            modal.classList.add('oculto');
             onConfirmCallback = null;
         }
 
@@ -438,7 +439,7 @@
         // PARTE 6B: MÊS SELECIONADO, GRÁFICOS E BACKUP
         const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
         const CORES = ['#2B59E0', '#0E9F6E', '#C8A24A', '#D13B47', '#7C5CFF', '#0FA3B1', '#F08A24', '#64748B'];
-        const monthPicker = document.getElementById('month-picker');
+        const monthPicker = document.getElementById('campo-mes');
         let selectedMonth = monthKey(new Date());
         let chartCategorias = null;
         let chartMeses = null;
@@ -468,12 +469,12 @@
             renderComparison();
             renderCharts();
             renderQuickChips();
-            document.getElementById('filter-hint').textContent = `Sem datas, o filtro vale só para ${monthLabel(selectedMonth)}. Com datas de início ou fim, vale para todo o período.`;
+            document.getElementById('dica-filtro').textContent = `Sem datas, o filtro vale só para ${monthLabel(selectedMonth)}. Com datas de início ou fim, vale para todo o período.`;
             renderBackupInfo();
         }
 
         function renderComparison() {
-            const el = document.getElementById('month-compare');
+            const el = document.getElementById('comparacao-mes');
             const atual = sumBy(getMonthTransactions(), 'Saída');
             const prev = shiftMonth(selectedMonth, -1);
             const anterior = sumBy(transactions.filter(t => monthOf(t.date) === prev), 'Saída');
@@ -485,17 +486,17 @@
         }
 
         function renderCharts() {
-            const section = document.getElementById('charts-section');
-            if (typeof Chart === 'undefined') { section.classList.add('hidden'); return; }
+            const section = document.getElementById('secao-graficos');
+            if (typeof Chart === 'undefined') { section.classList.add('oculto'); return; }
             const porCategoria = {};
             getMonthTransactions().filter(t => t.type === 'Saída').forEach(t => {
                 const c = normalizarCategoria(t.category);
                 porCategoria[c] = (porCategoria[c] || 0) + t.amount;
             });
             const cats = Object.entries(porCategoria).sort((a, b) => b[1] - a[1]);
-            document.getElementById('chart-categorias-vazio').classList.toggle('hidden', cats.length > 0);
+            document.getElementById('grafico-categorias-vazio').classList.toggle('oculto', cats.length > 0);
             if (chartCategorias) chartCategorias.destroy();
-            chartCategorias = new Chart(document.getElementById('chart-categorias'), {
+            chartCategorias = new Chart(document.getElementById('grafico-categorias'), {
                 type: 'doughnut',
                 data: { labels: cats.map(c => c[0]), datasets: [{ data: cats.map(c => c[1]), backgroundColor: CORES }] },
                 options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: ctx => `${ctx.label}: ${formatCurrency(ctx.parsed)}` } } } }
@@ -504,7 +505,7 @@
             const keys = [5, 4, 3, 2, 1, 0].map(i => shiftMonth(selectedMonth, -i));
             const porMes = keys.map(k => transactions.filter(t => monthOf(t.date) === k));
             if (chartMeses) chartMeses.destroy();
-            chartMeses = new Chart(document.getElementById('chart-meses'), {
+            chartMeses = new Chart(document.getElementById('grafico-meses'), {
                 type: 'bar',
                 data: {
                     labels: keys.map(k => `${k.slice(5)}/${k.slice(2, 4)}`),
@@ -553,22 +554,22 @@
         }
 
         function renderBackupInfo() {
-            const el = document.getElementById('backup-info');
+            const el = document.getElementById('info-backup');
             const last = Number(localStorage.getItem('finance-last-backup')) || 0;
             const dias = last ? Math.floor((Date.now() - last) / 86400000) : null;
             el.textContent = last
                 ? `Último backup: ${new Date(last).toLocaleDateString('pt-BR')} ${dias > 0 ? `(há ${dias} dias)` : '(hoje)'}`
                 : 'Você ainda não fez nenhum backup.';
-            el.className = 'backup-info' + ((dias === null || dias >= 7) ? ' is-alert' : '');
+            el.className = 'info-backup' + ((dias === null || dias >= 7) ? ' com-alerta' : '');
         }
 
-        document.getElementById('month-prev').addEventListener('click', () => setMonth(shiftMonth(selectedMonth, -1)));
-        document.getElementById('month-next').addEventListener('click', () => setMonth(shiftMonth(selectedMonth, 1)));
-        document.getElementById('month-today').addEventListener('click', () => setMonth(monthKey(new Date())));
+        document.getElementById('mes-anterior').addEventListener('click', () => setMonth(shiftMonth(selectedMonth, -1)));
+        document.getElementById('mes-seguinte').addEventListener('click', () => setMonth(shiftMonth(selectedMonth, 1)));
+        document.getElementById('mes-atual').addEventListener('click', () => setMonth(monthKey(new Date())));
         monthPicker.addEventListener('change', () => setMonth(monthPicker.value));
-        document.getElementById('export-btn').addEventListener('click', exportBackup);
-        document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file').click());
-        document.getElementById('import-file').addEventListener('change', e => {
+        document.getElementById('botao-exportar').addEventListener('click', exportBackup);
+        document.getElementById('botao-importar').addEventListener('click', () => document.getElementById('arquivo-importacao').click());
+        document.getElementById('arquivo-importacao').addEventListener('change', e => {
             if (e.target.files[0]) importBackup(e.target.files[0]);
             e.target.value = '';
         });
@@ -576,8 +577,8 @@
         if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
 
         // PARTE 6C: LANÇAMENTO RÁPIDO (texto livre)
-        const quickInput = document.getElementById('quick-input');
-        const quickPreview = document.getElementById('quick-preview');
+        const quickInput = document.getElementById('campo-rapido');
+        const quickPreview = document.getElementById('previa-rapida');
         const REGRAS_CATEGORIA = [
             ['Uber/99', /\b(uber|99|taxi|corrida)\b/],
             ['Estivas', /\b(mercado|supermercado|feira|atacadao|acougue)\b/],
@@ -650,7 +651,7 @@
 
         function previewQuick() {
             const r = parseQuick(quickInput.value);
-            quickPreview.className = 'quick-preview' + (r && r.erro ? ' is-error' : '');
+            quickPreview.className = 'previa-rapida' + (r && r.erro ? ' com-erro' : '');
             quickPreview.textContent = !r ? '' : (r.erro ? r.erro : `"${r.description}": ${resumoQuick(r)}`);
         }
 
@@ -668,13 +669,13 @@
             selectedMonth = monthOf(r.date);
             updateAll();
             quickInput.value = '';
-            quickPreview.className = 'quick-preview is-ok';
+            quickPreview.className = 'previa-rapida com-sucesso';
             quickPreview.textContent = `${editando ? 'Atualizado' : 'Lançado'}: "${r.description}", ${resumoQuick(r)}.`;
             quickInput.focus();
         }
 
         function renderQuickChips() {
-            const box = document.getElementById('quick-chips');
+            const box = document.getElementById('atalhos-rapidos');
             box.innerHTML = '';
             const usos = {};
             [...transactions].sort((a, b) => b.id - a.id).slice(0, 200).forEach(t => {
@@ -685,7 +686,7 @@
             Object.values(usos).sort((a, b) => b.n - a.n || b.ultimo.id - a.ultimo.id).slice(0, 6).forEach(({ ultimo: t }) => {
                 const b = document.createElement('button');
                 b.type = 'button';
-                b.className = 'chip';
+                b.className = 'atalho';
                 b.textContent = t.description;
                 b.title = 'Repetir o último valor (' + formatCurrency(t.amount) + ')';
                 b.addEventListener('click', () => {
@@ -703,7 +704,7 @@
             if (e.key === 'Enter') { e.preventDefault(); submitQuick(); }
             if (e.key === 'Escape' && editingTransactionId !== null) { editingTransactionId = null; quickInput.value = ''; quickPreview.textContent = 'Edição cancelada.'; }
         });
-        document.getElementById('quick-btn').addEventListener('click', submitQuick);
+        document.getElementById('botao-rapido').addEventListener('click', submitQuick);
 
         // PARTE 6D: EFEITOS E TEMA
         function animarValor(el, para) {
@@ -721,9 +722,9 @@
             el._raf = requestAnimationFrame(passo);
         }
 
-        document.getElementById('theme-toggle').addEventListener('click', () => {
-            const novo = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-            document.documentElement.dataset.theme = novo;
+        document.getElementById('alternar-tema').addEventListener('click', () => {
+            const novo = document.documentElement.dataset.tema === 'escuro' ? 'claro' : 'escuro';
+            document.documentElement.dataset.tema = novo;
             try { localStorage.setItem('finance-theme', novo); } catch (e) { }
         });
 
