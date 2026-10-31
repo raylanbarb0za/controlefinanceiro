@@ -41,7 +41,7 @@
         let transactions = JSON.parse(localStorage.getItem('finance-transactions')) || [];
         let creditCardPurchases = JSON.parse(localStorage.getItem('finance-cc-purchases')) || [];
 
-        // ALTERAÇÃO: Variável de estado para a lista de transações atualmente em exibição.
+        //Variável de estado para a lista de transações atualmente em exibição.
         let currentlyDisplayedTransactions = [];
 
         let onConfirmCallback = null;
@@ -109,7 +109,7 @@
             });
         }
 
-        // ALTERAÇÃO 2: Funções de filtro agora gerenciam a lista 'currentlyDisplayedTransactions'
+        //Funções de filtro agora gerenciam a lista 'currentlyDisplayedTransactions'
         function applyFilters() {
             const startDateString = filterStartDate.value;
             const endDateString = filterEndDate.value;
@@ -190,7 +190,6 @@
             }
         }
 
-        // A função updateDisplay que sugeri antes não é mais necessária, pois a lógica está em 'renderTransactionViews' e 'updateNavButtons'
 
         function saveTransactionsToStorage() {
             localStorage.setItem('finance-transactions', JSON.stringify(transactions));
@@ -206,8 +205,8 @@
             slider.innerHTML = '';
 
             if (transactionsToRender.length === 0) {
-                transactionTableBody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 py-4">Nenhum lançamento encontrado.</td></tr>`;
-                slider.innerHTML = `<div class="carousel-slide text-center text-gray-500 py-8">Nenhum lançamento encontrado.</div>`;
+                transactionTableBody.innerHTML = `<tr><td colspan="5" class="empty">Nenhum lançamento encontrado.</td></tr>`;
+                slider.innerHTML = `<div class="carousel-slide empty">Nenhum lançamento encontrado.</div>`;
                 updateNavButtons(transactionsToRender);
                 return;
             }
@@ -222,31 +221,31 @@
             sortedTransactions.forEach(t => {
                 const isEntrada = t.type === 'Entrada';
                 const valorFormatado = t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                const corValor = isEntrada ? 'text-green-600' : 'text-red-600';
+                const corValor = isEntrada ? 'valor-entrada' : 'valor-saida';
                 const sinal = isEntrada ? '+' : '-';
                 const categoriaNormalizada = normalizarCategoria(t.category);
 
                 const tableRow = document.createElement('tr');
                 tableRow.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(t.date)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${esc(t.description)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${categoriaNormalizada}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${corValor}">${sinal} R$ ${valorFormatado}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir</button>
-                    <button onclick="editTransaction(${t.id})" class="text-yellow-600 hover:text-yellow-900 text-sm font-medium">Editar</button>
+                <td class="muted">${formatDate(t.date)}</td>
+                <td class="strong">${esc(t.description)}</td>
+                <td><span class="badge">${categoriaNormalizada}</span></td>
+                <td class="num ${corValor}">${sinal} R$ ${valorFormatado}</td>
+                <td class="actions">
+                    <button onclick="deleteTransaction(${t.id})" class="link-btn link-btn--danger">Excluir</button>
+                    <button onclick="editTransaction(${t.id})" class="link-btn">Editar</button>
                 </td>`;
                 transactionTableBody.appendChild(tableRow);
 
                 const slideDiv = document.createElement('div');
                 slideDiv.className = 'carousel-slide';
                 slideDiv.innerHTML = `
-                <div class="slide-data-point"><span class="slide-label">Data:</span><span class="text-sm text-gray-800">${formatDate(t.date)}</span></div>
-                <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900">${esc(t.description)}</span></div>
-                <div class="slide-data-point"><span class="slide-label">Categoria:</span><span class="text-sm text-gray-800">${categoriaNormalizada}</span></div>
-                <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="text-sm font-bold ${corValor}">${sinal} R$ ${valorFormatado}</span></div>
-                <div class="mt-4 text-center"><button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Lançamento</button></div>
-                <div class="mt-4 text-center"><button onclick="editTransaction(${t.id})" class="text-yellow-600 hover:text-yellow-900 text-sm font-medium">Editar Lançamento</button></div>`;
+                <div class="slide-data-point"><span class="slide-label">Data:</span><span class="slide-value">${formatDate(t.date)}</span></div>
+                <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="slide-value strong">${esc(t.description)}</span></div>
+                <div class="slide-data-point"><span class="slide-label">Categoria:</span><span class="slide-value">${categoriaNormalizada}</span></div>
+                <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="slide-value ${corValor}">${sinal} R$ ${valorFormatado}</span></div>
+                <div class="slide-actions"><button onclick="deleteTransaction(${t.id})" class="link-btn link-btn--danger">Excluir Lançamento</button></div>
+                <div class="slide-actions"><button onclick="editTransaction(${t.id})" class="link-btn">Editar Lançamento</button></div>`;
                 slider.appendChild(slideDiv);
             });
 
@@ -285,8 +284,8 @@
             creditCardTableBody.innerHTML = '';
             ccSlider.innerHTML = '';
             if (creditCardPurchases.length === 0) {
-                creditCardTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-500 py-4">Nenhuma compra no cartão adicionada ainda.</td></tr>`;
-                ccSlider.innerHTML = `<div class="carousel-slide text-center text-gray-500">Nenhuma compra no cartão.</div>`;
+                creditCardTableBody.innerHTML = `<tr><td colspan="4" class="empty">Nenhuma compra no cartão adicionada ainda.</td></tr>`;
+                ccSlider.innerHTML = `<div class="carousel-slide empty">Nenhuma compra no cartão.</div>`;
                 updateCreditCardNavButtons();
                 return;
             }
@@ -297,22 +296,22 @@
                 if (p.installmentCurrent && p.installmentTotal) installmentText = `${p.installmentCurrent} / ${p.installmentTotal}`;
                 const tableRow = document.createElement('tr');
                 tableRow.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${esc(p.description)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">${formatCurrency(p.amount)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${installmentText}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <button onclick="deleteCreditCardPurchase(${p.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir</button>
-                    <button onclick="editCreditCardPurchase(${p.id})" class="text-yellow-600 hover:text-yellow-900 text-sm font-medium">Editar</button>
+                <td class="strong">${esc(p.description)}</td>
+                <td class="num valor-saida">${formatCurrency(p.amount)}</td>
+                <td class="muted center">${installmentText}</td>
+                <td class="actions">
+                    <button onclick="deleteCreditCardPurchase(${p.id})" class="link-btn link-btn--danger">Excluir</button>
+                    <button onclick="editCreditCardPurchase(${p.id})" class="link-btn">Editar</button>
                 </td>`;
                 creditCardTableBody.appendChild(tableRow);
                 const slideDiv = document.createElement('div');
                 slideDiv.className = 'carousel-slide';
                 slideDiv.innerHTML = `
-                <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="text-sm font-medium text-gray-900 text-right">${esc(p.description)}</span></div>
-                <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="text-sm font-bold text-red-600">${formatCurrency(p.amount)}</span></div>
-                <div class="slide-data-point"><span class="slide-label">Parcelas:</span><span class="text-sm text-gray-800">${installmentText}</span></div>
-                <div class="mt-4 text-center"><button onclick="deleteCreditCardPurchase(${p.id})" class="text-red-600 hover:text-red-900 text-sm font-medium">Excluir Lançamento</button></div>
-                <div class="mt-4 text-center"><button onclick="editCreditCardPurchase(${p.id})" class="text-yellow-600 hover:text-yellow-900 text-sm font-medium">Editar Lançamento</button></div>`;
+                <div class="slide-data-point"><span class="slide-label">Descrição:</span><span class="slide-value strong">${esc(p.description)}</span></div>
+                <div class="slide-data-point"><span class="slide-label">Valor:</span><span class="slide-value valor-saida">${formatCurrency(p.amount)}</span></div>
+                <div class="slide-data-point"><span class="slide-label">Parcelas:</span><span class="slide-value">${installmentText}</span></div>
+                <div class="slide-actions"><button onclick="deleteCreditCardPurchase(${p.id})" class="link-btn link-btn--danger">Excluir Lançamento</button></div>
+                <div class="slide-actions"><button onclick="editCreditCardPurchase(${p.id})" class="link-btn">Editar Lançamento</button></div>`;
                 ccSlider.appendChild(slideDiv);
             });
             showCreditCardSlide(0);
@@ -323,22 +322,11 @@
             const entradas = sumBy(mes, 'Entrada');
             const saidas = sumBy(mes, 'Saída');
             const saldo = entradas - saidas;
-            totalEntradasEl.textContent = formatCurrency(entradas);
-            totalSaidasEl.textContent = formatCurrency(saidas);
-            saldoFinalEl.textContent = formatCurrency(saldo);
+            animarValor(totalEntradasEl, entradas);
+            animarValor(totalSaidasEl, saidas);
+            animarValor(saldoFinalEl, saldo);
             document.getElementById('saldo-acumulado').textContent = 'Acumulado total: ' + formatCurrency(sumBy(transactions, 'Entrada') - sumBy(transactions, 'Saída'));
-            saldoFinalCard.classList.remove('bg-blue-100', 'border-blue-200', 'bg-green-100', 'border-green-200', 'bg-red-100', 'border-red-200');
-            saldoFinalEl.classList.remove('text-blue-900', 'text-green-900', 'text-red-900');
-            if (saldo > 0) {
-                saldoFinalCard.classList.add('bg-green-100', 'border-green-200');
-                saldoFinalEl.classList.add('text-green-900');
-            } else if (saldo < 0) {
-                saldoFinalCard.classList.add('bg-red-100', 'border-red-200');
-                saldoFinalEl.classList.add('text-red-900');
-            } else {
-                saldoFinalCard.classList.add('bg-blue-100', 'border-blue-200');
-                saldoFinalEl.classList.add('text-blue-900');
-            }
+            document.getElementById('summary').dataset.estado = saldo > 0 ? 'positivo' : (saldo < 0 ? 'negativo' : 'zero');
         }
 
         function updateCreditCardSummary() {
@@ -352,13 +340,13 @@
             modalButtons.innerHTML = '';
             if (callback) {
                 modalButtons.innerHTML = `
-                <button id="modal-confirm-btn" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Sim</button>
-                <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-900 text-base font-medium rounded-md w-24 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Não</button>
+                <button id="modal-confirm-btn" class="btn btn--danger">Sim</button>
+                <button id="modal-cancel-btn" class="btn btn--ghost">Não</button>
             `;
                 document.getElementById('modal-confirm-btn').onclick = () => { if (onConfirmCallback) onConfirmCallback(); hideModal(); };
                 document.getElementById('modal-cancel-btn').onclick = hideModal;
             } else {
-                modalButtons.innerHTML = `<button id="modal-ok-btn" class="px-4 py-2 bg-indigo-500 text-white text-base font-medium rounded-md w-full hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">OK</button>`;
+                modalButtons.innerHTML = `<button id="modal-ok-btn" class="btn btn--primary btn--block">OK</button>`;
                 document.getElementById('modal-ok-btn').onclick = hideModal;
             }
             modal.classList.remove('hidden');
@@ -449,7 +437,7 @@
 
         // PARTE 6B: MÊS SELECIONADO, GRÁFICOS E BACKUP
         const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-        const CORES = ['#4f46e5', '#f97316', '#10b981', '#ef4444', '#eab308', '#06b6d4', '#8b5cf6', '#64748b'];
+        const CORES = ['#2B59E0', '#0E9F6E', '#C8A24A', '#D13B47', '#7C5CFF', '#0FA3B1', '#F08A24', '#64748B'];
         const monthPicker = document.getElementById('month-picker');
         let selectedMonth = monthKey(new Date());
         let chartCategorias = null;
@@ -521,8 +509,8 @@
                 data: {
                     labels: keys.map(k => `${k.slice(5)}/${k.slice(2, 4)}`),
                     datasets: [
-                        { label: 'Entradas', data: porMes.map(l => sumBy(l, 'Entrada')), backgroundColor: '#10b981' },
-                        { label: 'Saídas', data: porMes.map(l => sumBy(l, 'Saída')), backgroundColor: '#ef4444' }
+                        { label: 'Entradas', data: porMes.map(l => sumBy(l, 'Entrada')), backgroundColor: '#0E9F6E', borderRadius: 6 },
+                        { label: 'Saídas', data: porMes.map(l => sumBy(l, 'Saída')), backgroundColor: '#D13B47', borderRadius: 6 }
                     ]
                 },
                 options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}` } } } }
@@ -571,7 +559,7 @@
             el.textContent = last
                 ? `Último backup: ${new Date(last).toLocaleDateString('pt-BR')} ${dias > 0 ? `(há ${dias} dias)` : '(hoje)'}`
                 : 'Você ainda não fez nenhum backup.';
-            el.className = 'mt-3 text-sm ' + ((dias === null || dias >= 7) ? 'text-amber-700' : 'text-gray-600');
+            el.className = 'backup-info' + ((dias === null || dias >= 7) ? ' is-alert' : '');
         }
 
         document.getElementById('month-prev').addEventListener('click', () => setMonth(shiftMonth(selectedMonth, -1)));
@@ -662,7 +650,7 @@
 
         function previewQuick() {
             const r = parseQuick(quickInput.value);
-            quickPreview.className = 'text-sm mt-2 min-h-[1.25rem] ' + (r && r.erro ? 'text-amber-700' : 'text-gray-600');
+            quickPreview.className = 'quick-preview' + (r && r.erro ? ' is-error' : '');
             quickPreview.textContent = !r ? '' : (r.erro ? r.erro : `"${r.description}": ${resumoQuick(r)}`);
         }
 
@@ -680,7 +668,7 @@
             selectedMonth = monthOf(r.date);
             updateAll();
             quickInput.value = '';
-            quickPreview.className = 'text-sm mt-2 min-h-[1.25rem] text-green-700';
+            quickPreview.className = 'quick-preview is-ok';
             quickPreview.textContent = `${editando ? 'Atualizado' : 'Lançado'}: "${r.description}", ${resumoQuick(r)}.`;
             quickInput.focus();
         }
@@ -697,7 +685,7 @@
             Object.values(usos).sort((a, b) => b.n - a.n || b.ultimo.id - a.ultimo.id).slice(0, 6).forEach(({ ultimo: t }) => {
                 const b = document.createElement('button');
                 b.type = 'button';
-                b.className = 'text-sm bg-gray-100 hover:bg-indigo-100 text-gray-800 rounded-full px-3 py-1';
+                b.className = 'chip';
                 b.textContent = t.description;
                 b.title = 'Repetir o último valor (' + formatCurrency(t.amount) + ')';
                 b.addEventListener('click', () => {
@@ -716,6 +704,28 @@
             if (e.key === 'Escape' && editingTransactionId !== null) { editingTransactionId = null; quickInput.value = ''; quickPreview.textContent = 'Edição cancelada.'; }
         });
         document.getElementById('quick-btn').addEventListener('click', submitQuick);
+
+        // PARTE 6D: EFEITOS E TEMA
+        function animarValor(el, para) {
+            const de = el._valor !== undefined ? el._valor : 0;
+            el._valor = para;
+            if (el._raf && window.cancelAnimationFrame) cancelAnimationFrame(el._raf);
+            const reduzir = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (!window.requestAnimationFrame || reduzir || de === para) { el.textContent = formatCurrency(para); return; }
+            const inicio = performance.now(), duracao = 550;
+            const passo = agora => {
+                const p = Math.min((agora - inicio) / duracao, 1), suave = 1 - Math.pow(1 - p, 3);
+                el.textContent = formatCurrency(de + (para - de) * suave);
+                if (p < 1) el._raf = requestAnimationFrame(passo);
+            };
+            el._raf = requestAnimationFrame(passo);
+        }
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const novo = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+            document.documentElement.dataset.theme = novo;
+            try { localStorage.setItem('finance-theme', novo); } catch (e) { }
+        });
 
         // PARTE 7: INICIALIZAÇÃO E EVENT LISTENERS
         creditCardForm.addEventListener('submit', addCreditCardPurchase);
