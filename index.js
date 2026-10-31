@@ -41,7 +41,7 @@
         let transactions = JSON.parse(localStorage.getItem('finance-transactions')) || [];
         let creditCardPurchases = JSON.parse(localStorage.getItem('finance-cc-purchases')) || [];
 
-        // ALTERAÇÃO: Variável de estado para a lista de transações atualmente em exibição.
+        // Variável de estado para a lista de transações atualmente em exibição.
         let currentlyDisplayedTransactions = [];
 
         let onConfirmCallback = null;
@@ -109,7 +109,7 @@
             });
         }
 
-        // ALTERAÇÃO 2: Funções de filtro agora gerenciam a lista 'currentlyDisplayedTransactions'
+        // Funções de filtro agora gerenciam a lista 'currentlyDisplayedTransactions'
         function applyFilters() {
             const startDateString = filterStartDate.value;
             const endDateString = filterEndDate.value;
@@ -189,8 +189,6 @@
                 filteredSummaryEl.classList.add('oculto');
             }
         }
-
-        // A função updateDisplay que sugeri antes não é mais necessária, pois a lógica está em 'renderTransactionViews' e 'updateNavButtons'
 
         function saveTransactionsToStorage() {
             localStorage.setItem('finance-transactions', JSON.stringify(transactions));
@@ -424,7 +422,7 @@
 
         // PARTE 6: FUNÇÃO PRINCIPAL DE ATUALIZAÇÃO
         function updateAll() {
-            // ALTERAÇÃO: Garante que a lista ativa esteja sincronizada quando tudo é atualizado
+            // Garante que a lista ativa esteja sincronizada quando tudo é atualizado
             currentlyDisplayedTransactions = getMonthTransactions();
             renderTransactionViews(currentlyDisplayedTransactions);
             updateSummary();
@@ -734,7 +732,7 @@
         filterBtn.addEventListener('click', applyFilters);
         clearFilterBtn.addEventListener('click', clearFilters);
 
-        // ALTERAÇÃO: Os botões agora passam a lista ativa para a função showSlide
+        // Os botões agora passam a lista ativa para a função showSlide
         prevBtn.addEventListener('click', () => showSlide(currentSlide - 1, currentlyDisplayedTransactions));
         nextBtn.addEventListener('click', () => showSlide(currentSlide + 1, currentlyDisplayedTransactions));
 
