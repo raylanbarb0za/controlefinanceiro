@@ -50,6 +50,15 @@
         let editingTransactionId = null;
         let editingCreditCardId = null;
 
+        // rolagem fixa ao dar f5
+        if ("scrollRestoration" in history) {
+          history.scrollRestoration = "manual";
+        }
+
+        window.addEventListener("load", () => {
+          window.scrollTo(0, 0);
+        });
+
         // PARTE 3: FUNÇÕES DE DADOS (ADD, DELETE, FILTER, SAVE)
         function addCreditCardPurchase(e) {
             e.preventDefault();
@@ -252,18 +261,29 @@
         }
 
         function editTransaction(id) {
-            const t = transactions.find(item => item.id === id);
-            if (!t) return;
-            showModal('Deseja editar este lançamento?', () => {
-                const tag = Object.keys(TAGS_CATEGORIA).find(k => TAGS_CATEGORIA[k] === normalizarCategoria(t.category));
-                const [y, m, d] = t.date.includes('/') ? t.date.split('/').reverse() : t.date.split('-');
-                quickInput.value = `${t.type === 'Entrada' ? '+ ' : ''}${t.description} ${t.amount.toFixed(2).replace('.', ',')} ${Number(d)}/${Number(m)}/${y}${tag ? ' #' + tag : ''}`;
-                editingTransactionId = id;
-                previewQuick();
-                quickPreview.textContent = 'Editando: ' + quickPreview.textContent + ' (Enter salva, Esc cancela)';
-                quickInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                quickInput.focus();
+          const t = transactions.find((item) => item.id === id);
+          if (!t) return;
+          showModal("Deseja editar este lançamento?", () => {
+            const tag = Object.keys(TAGS_CATEGORIA).find(
+              (k) => TAGS_CATEGORIA[k] === normalizarCategoria(t.category),
+            );
+            const [y, m, d] = t.date.includes("/")
+              ? t.date.split("/").reverse()
+              : t.date.split("-");
+            quickInput.value = `${t.type === "Entrada" ? "+ " : ""}${t.description} ${t.amount.toFixed(2).replace(".", ",")} ${Number(d)}/${Number(m)}/${y}${tag ? " #" + tag : ""}`;
+            editingTransactionId = id;
+            previewQuick();
+            quickPreview.textContent =
+              "Editando: " +
+              quickPreview.textContent +
+              " (Enter salva, Esc cancela)";
+            quickInput.scrollIntoView({ 
+                behavior: "smooth",
+                block: "center" 
             });
+
+            quickInput.focus();
+          });
         }
 
         function editCreditCardPurchase(id) {
