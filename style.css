@@ -1141,13 +1141,12 @@ td.acoes {
     .grade-filtro input[type="date"].campo {
     -webkit-appearance: none; /* tira o estilo nativo do celular que aumenta o campo */
     appearance: none;
-    display: block;
     text-align: left;
     }
 
     .grade-filtro input[type="date"].campo::-webkit-date-and-time-value {
     text-align: left;
-    min-height: 1.2em; /* evita o campo vazio "murchar */
+    margin: 0;
     }
 
     .acoes-filtro {
