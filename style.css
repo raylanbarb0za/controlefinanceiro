@@ -1133,6 +1133,23 @@ td.acoes {
         gap: .8rem;
     }
 
+    .grade-filtro .campo {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .grade-filtro input[type="date"].campo {
+    -webkit-appearance: none; /* tira o estilo nativo do celular que aumenta o campo */
+    appearance: none;
+    display: block;
+    text-align: left;
+    }
+
+    .grade-filtro input[type="date"].campo::-webkit-date-and-time-value {
+    text-align: left;
+    min-height: 1.2em; /* evita o campo vazio "murchar */
+    }
+
     .acoes-filtro {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
