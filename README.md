@@ -1,6 +1,6 @@
 # Meu Controle Financeiro Web
 
-Aplicação web simples para controle financeiro pessoal, desenvolvida com HTML, CSS e JavaScript puro, estilizada com Tailwind CSS. Permite registrar entradas e saídas, acompanhar o saldo, filtrar lançamentos por período, categoria e tipo, além de controlar as compras e parcelas do cartão de crédito.
+Criada através de uma dor minha, aplicação web simples para controle financeiro pessoal, desenvolvida com HTML, CSS e JavaScript. Permite registrar entradas e saídas, acompanhar o saldo, filtrar lançamentos por período, categoria e tipo, além de controlar as compras e parcelas do cartão de crédito.
 
 ## Objetivo
 
@@ -16,7 +16,6 @@ Navegar pelos lançamentos e compras através de um carrossel, além da tabela t
 ## Tecnologias utilizadas
 
 **HTML5** — estruturação da interface
-**Tailwind CSS** (via CDN) — estilização e responsividade
 **CSS3** — estilos complementares
 **JavaScript** — lógica da aplicação, manipulação do DOM e regras de negócio
 
@@ -45,7 +44,7 @@ Por ser um projeto front-end puro, não há necessidade de instalação de depen
 
 1. Clonar o repositório:
 
-git clone https://github.com/raylanbarb0za/controlefinanceiro.git
+git clone https://github.com/raylanbarb0za/controlefinanceiro
 
 2. Acessar a pasta do projeto:
 
@@ -62,7 +61,7 @@ controlefinanceiro/
 
 ## Status do projeto
 
-Projeto finalizado com alguns erros, aberto a melhorias e novas funcionalidades.
+Em andamento, procurando adicionar mais recursos que possam melhorar cada vez mais a experiência sobre o controle financeiro.
 
 ## Contribuições
 
