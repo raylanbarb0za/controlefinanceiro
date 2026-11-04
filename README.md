@@ -38,6 +38,9 @@ Cálculo automático do total da fatura atual
 ### Interface
 Modal de confirmação/alerta personalizado para ações como exclusão
 
+### Armazenamento
+Por enquanto, tudo no navegador (localstorage)
+
 ## Como executar o projeto
 
 Por ser um projeto front-end puro, não há necessidade de instalação de dependências. Basta:
