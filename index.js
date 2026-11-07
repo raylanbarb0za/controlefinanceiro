@@ -480,10 +480,16 @@ function renderComparison() {
 
 function renderCharts() {
   const section = document.getElementById("secao-graficos");
+
   if (typeof Chart === "undefined") {
     section.classList.add("oculto");
     return;
   }
+
+  const escuro = document.documentElement.dataset.tema === 'escuro';
+
+  Chart.defaults.color = escuro ? '#E8EFE9' : '#26332B'; // textos, legenda, eixos
+  Chart.defaults.borderColor = escuro ? '#3A4841' : '#D9E3D3'; // linhas de grade
 
   // Gráfico 1: saídas por categoria
   const porCategoria = {};
@@ -556,6 +562,16 @@ function renderCharts() {
     },
   });
 }
+
+// chama a funcao renderCharts() - redesenha os graficos ao mudar de tema
+new MutationObserver(renderCharts).observe(document.documentElement, {
+  attributes: true,
+  attributeFilter: ["data-tema"],
+});
+new MutationObserver(renderCharts).observe(document.body, {
+  attributes: true,
+  attributeFilter: ["data-tema"],
+});
 
 //7. FILTRO DE LANÇAMENTOS
 const filterStartDate = document.getElementById("filtro-data-inicio");
